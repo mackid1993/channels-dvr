@@ -8,8 +8,8 @@ on:
     tags:
       - 'v*'
   schedule:
-    # Rebuild weekly to get updated base image
-    - cron: '0 4 * * 0'
+    # Rebuild on the 1st of every month at midnight Eastern Time (5:00 UTC)
+    - cron: '0 5 1 * *'
   workflow_dispatch:
 
 env:
