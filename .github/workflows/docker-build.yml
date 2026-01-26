@@ -40,18 +40,19 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate version
+      - name: Generate version and lowercase image name
         id: version
         run: |
           VERSION=$(date +'%Y.%m.%d')-${{ github.run_number }}
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "image_name=${IMAGE_NAME,,}" >> $GITHUB_OUTPUT
           echo "Generated version: ${VERSION}"
 
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ steps.version.outputs.image_name }}
           tags: |
             type=raw,value=latest
             type=raw,value=${{ steps.version.outputs.version }}
