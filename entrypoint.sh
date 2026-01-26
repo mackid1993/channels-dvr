@@ -59,13 +59,6 @@ if command -v nvidia-smi &> /dev/null; then
     echo "NVIDIA GPU detected"
 fi
 
-# TCP buffer tuning for stable streaming (may require host network mode)
-# These settings help prevent buffer underruns during streaming
-sysctl -w net.core.rmem_max=16777216 2>/dev/null && echo "TCP rmem_max set to 16MB" || true
-sysctl -w net.core.wmem_max=16777216 2>/dev/null && echo "TCP wmem_max set to 16MB" || true
-sysctl -w net.ipv4.tcp_rmem="4096 87380 16777216" 2>/dev/null && echo "TCP rmem tuned" || true
-sysctl -w net.ipv4.tcp_wmem="4096 65536 16777216" 2>/dev/null && echo "TCP wmem tuned" || true
-
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  Starting Channels DVR Server"
 echo "  Web UI: http://localhost:8089"
