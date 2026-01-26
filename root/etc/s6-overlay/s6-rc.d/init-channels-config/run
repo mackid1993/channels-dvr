@@ -1,0 +1,81 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  Channels DVR - Initialization"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# Set permissions on config directory
+chown -R abc:abc /channels-dvr
+chmod 755 /channels-dvr
+
+# Set permissions on recordings directory (top level only)
+chown abc:abc /shares/DVR
+chmod 755 /shares/DVR
+
+# Download Channels DVR if not present
+if [[ ! -f /channels-dvr/channels-dvr ]]; then
+    echo "Channels DVR binary not found, downloading..."
+    s6-setuidgid abc /usr/local/bin/setup.sh
+elif [[ "${UPDATE_ON_START}" == "true" ]]; then
+    echo "Checking for Channels DVR updates..."
+    s6-setuidgid abc /usr/local/bin/setup.sh || true
+else
+    echo "Channels DVR binary found, skipping update check"
+fi
+
+# Apply TCP tuning if we have permissions
+echo "Applying TCP tuning..."
+
+if [[ -w /proc/sys/net/core/wmem_default ]]; then
+    echo "${TCP_WMEM_DEFAULT:-1048576}" > /proc/sys/net/core/wmem_default
+    echo "  net.core.wmem_default = $(cat /proc/sys/net/core/wmem_default)"
+fi
+
+if [[ -w /proc/sys/net/core/rmem_default ]]; then
+    echo "${TCP_RMEM_DEFAULT:-1048576}" > /proc/sys/net/core/rmem_default
+    echo "  net.core.rmem_default = $(cat /proc/sys/net/core/rmem_default)"
+fi
+
+if [[ -w /proc/sys/net/ipv4/tcp_wmem ]]; then
+    echo "4096 1048576 16777216" > /proc/sys/net/ipv4/tcp_wmem
+    echo "  net.ipv4.tcp_wmem = $(cat /proc/sys/net/ipv4/tcp_wmem)"
+fi
+
+if [[ -w /proc/sys/net/ipv4/tcp_rmem ]]; then
+    echo "4096 1048576 16777216" > /proc/sys/net/ipv4/tcp_rmem
+    echo "  net.ipv4.tcp_rmem = $(cat /proc/sys/net/ipv4/tcp_rmem)"
+fi
+
+if [[ -w /proc/sys/net/ipv4/tcp_keepalive_time ]]; then
+    echo "60" > /proc/sys/net/ipv4/tcp_keepalive_time
+    echo "  net.ipv4.tcp_keepalive_time = 60"
+fi
+
+if [[ -w /proc/sys/net/ipv4/tcp_keepalive_intvl ]]; then
+    echo "10" > /proc/sys/net/ipv4/tcp_keepalive_intvl
+    echo "  net.ipv4.tcp_keepalive_intvl = 10"
+fi
+
+if [[ -w /proc/sys/net/ipv4/tcp_keepalive_probes ]]; then
+    echo "6" > /proc/sys/net/ipv4/tcp_keepalive_probes
+    echo "  net.ipv4.tcp_keepalive_probes = 6"
+fi
+
+if [[ -w /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_established ]]; then
+    echo "3600" > /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_established
+    echo "  nf_conntrack_tcp_timeout_established = 3600"
+fi
+
+if [[ -w /proc/sys/net/netfilter/nf_conntrack_tcp_be_liberal ]]; then
+    echo "1" > /proc/sys/net/netfilter/nf_conntrack_tcp_be_liberal
+    echo "  nf_conntrack_tcp_be_liberal = 1"
+fi
+
+# Check for Intel GPU
+if [[ -e /dev/dri ]]; then
+    echo "Intel GPU detected, testing VA-API..."
+    s6-setuidgid abc vainfo 2>&1 | head -5 || echo "  VA-API not available"
+fi
+
+echo "Initialization complete"

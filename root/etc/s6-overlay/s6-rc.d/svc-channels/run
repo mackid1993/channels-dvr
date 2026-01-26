@@ -1,0 +1,11 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  Starting Channels DVR Server"
+echo "  Web UI: http://localhost:8089"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+cd /channels-dvr
+
+exec s6-setuidgid abc /channels-dvr/channels-dvr
