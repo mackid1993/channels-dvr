@@ -22,6 +22,14 @@ ENV PGID=100
 ENV TZ=America/New_York
 ENV NVIDIA_DRIVER_CAPABILITIES="compute,video,utility"
 
+# TCP keepalive settings for libkeepalive (set here to ensure they're available to all processes)
+ENV TCP_KEEPIDLE=300
+ENV TCP_KEEPINTVL=60
+ENV TCP_KEEPCNT=5
+ENV TCP_USER_TIMEOUT=600000
+ENV TCP_NODELAY=1
+ENV LD_PRELOAD=/usr/lib/libkeepalive_socket.so
+
 # Install tini and core dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tini curl ca-certificates wget gnupg xvfb ffmpeg iproute2 gosu \
