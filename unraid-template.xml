@@ -21,7 +21,7 @@ Key Features:&#xD;
   <Category>MediaServer:Video</Category>
   <WebUI>http://[IP]:8089</WebUI>
   <TemplateURL/>
-  <Icon>https://getchannels.com/img/icon512.png</Icon>
+  <Icon>https://raw.githubusercontent.com/timstephens24/docker-templates/master/img/channels-logo.png</Icon>
   <ExtraParams/>
   <PostArgs/>
   <CPUset/>
