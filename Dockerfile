@@ -47,7 +47,10 @@ RUN if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
     /etc/apt/sources.list.d/google-chrome.list && \
     apt-get update && \
     apt-get install -y --no-install-recommends google-chrome-stable && \
-    rm -rf /var/lib/apt/lists/*; \
+    rm -rf /var/lib/apt/lists/* && \
+    mv /usr/bin/google-chrome-stable /usr/bin/google-chrome-stable-real && \
+    echo '#!/bin/bash\nexec /usr/bin/google-chrome-stable-real --no-sandbox "$@"' > /usr/bin/google-chrome-stable && \
+    chmod +x /usr/bin/google-chrome-stable; \
     fi
 
 # Install Intel GPU drivers for QuickSync (amd64 only)
