@@ -50,10 +50,6 @@ RUN wget -qO - https://repositories.intel.com/gpu/intel-graphics.key | \
     intel-media-va-driver-non-free libmfx-gen1 libvpl2 && \
     rm -rf /var/lib/apt/lists/*
 
-# Disable HTTP/2 to fix stale connection issues on Linux
-# Go's HTTP/2 implementation has bugs where broken connections stay in the pool
-ENV GODEBUG=http2server=0,http2client=0
-
 # Create directories
 RUN mkdir -p /channels-dvr /shares/DVR
 
