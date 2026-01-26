@@ -27,7 +27,7 @@ cd "${CHANNELS_DIR}"
 
 # Get latest version (or use DVR_VERSION env var if set)
 echo "Fetching latest version..."
-version=$(fetch "$host/latest.txt" -)
+version=$(fetch "$host/latest.txt" - | tr -d '\r')
 
 if [ -n "$DVR_VERSION" ]; then
   version="$DVR_VERSION"
