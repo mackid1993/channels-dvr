@@ -10,14 +10,20 @@ PUID=${PUID:-99}
 PGID=${PGID:-100}
 
 # TCP keepalive settings via libkeepalive (per-process, doesn't affect host)
-export KEEPIDLE=300    # 5 minutes before first probe (vs 2hr default)
-export KEEPINTVL=60    # 60 second probe interval
-export KEEPCNT=3       # 3 probes before giving up
-export LD_PRELOAD=/usr/lib/libkeepalive.so
+# Set TCP_KEEPALIVE=0 to disable, or customize KEEPIDLE/KEEPINTVL/KEEPCNT
+if [ "${TCP_KEEPALIVE:-1}" = "1" ]; then
+    export KEEPIDLE=${KEEPIDLE:-300}    # 5 minutes before first probe (vs 2hr default)
+    export KEEPINTVL=${KEEPINTVL:-60}   # 60 second probe interval
+    export KEEPCNT=${KEEPCNT:-3}        # 3 probes before giving up
+    export LD_PRELOAD=/usr/lib/libkeepalive.so
+    KEEPALIVE_STATUS="enabled (${KEEPIDLE}s idle, ${KEEPINTVL}s interval, ${KEEPCNT} probes)"
+else
+    KEEPALIVE_STATUS="disabled"
+fi
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  Channels DVR - Starting"
-echo "  TCP Keepalive: ${KEEPIDLE}s idle, ${KEEPINTVL}s interval, ${KEEPCNT} probes"
+echo "  TCP Keepalive: $KEEPALIVE_STATUS"
 echo "  UID: $PUID | GID: $PGID"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
