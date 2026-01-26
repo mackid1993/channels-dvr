@@ -9,30 +9,8 @@ set -e
 PUID=${PUID:-99}
 PGID=${PGID:-100}
 
-# TCP stack tuning via libkeepalive (per-process, doesn't affect host)
-# Set TCP_KEEPALIVE=0 to disable
-if [ "${TCP_KEEPALIVE:-1}" = "1" ]; then
-    # Keepalive - detect dead peers stuck in ESTABLISHED
-    export TCP_KEEPIDLE=${TCP_KEEPIDLE:-300}      # 5 min before first probe
-    export TCP_KEEPINTVL=${TCP_KEEPINTVL:-60}     # 60 sec probe interval
-    export TCP_KEEPCNT=${TCP_KEEPCNT:-5}          # 5 probes before giving up
-
-    # Force cleanup of unresponsive connections (milliseconds)
-    # Total timeout: KEEPIDLE + (KEEPINTVL * KEEPCNT) = 300 + 300 = 600s = 10 min
-    export TCP_USER_TIMEOUT=${TCP_USER_TIMEOUT:-600000}
-
-    # Additional TCP tuning
-    export TCP_NODELAY=${TCP_NODELAY:-1}          # Disable Nagle's algorithm
-
-    export LD_PRELOAD=/usr/lib/libkeepalive_socket.so
-    KEEPALIVE_STATUS="enabled (${TCP_KEEPIDLE}s idle, ${TCP_KEEPINTVL}s interval, ${TCP_KEEPCNT} probes, timeout=${TCP_USER_TIMEOUT}ms)"
-else
-    KEEPALIVE_STATUS="disabled"
-fi
-
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  Channels DVR - Starting"
-echo "  TCP Keepalive: $KEEPALIVE_STATUS"
 echo "  UID: $PUID | GID: $PGID"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 

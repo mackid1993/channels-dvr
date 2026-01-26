@@ -22,10 +22,7 @@ ENV PGID=100
 ENV TZ=America/New_York
 ENV NVIDIA_DRIVER_CAPABILITIES="compute,video,utility"
 
-# TCP keepalive settings for libkeepalive (set here to ensure they're available to all processes)
-ENV TCP_KEEPIDLE=300
-ENV TCP_KEEPINTVL=60
-ENV TCP_KEEPCNT=5
+# TCP tuning via libkeepalive (Go overrides keepalive timing, but these work)
 ENV TCP_USER_TIMEOUT=600000
 ENV TCP_NODELAY=1
 ENV LD_PRELOAD=/usr/lib/libkeepalive.so:/usr/lib/libkeepalive_listen.so:/usr/lib/libkeepalive_socket.so
