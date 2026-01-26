@@ -17,7 +17,7 @@ Key Features:&#xD;
 - Proper PUID/PGID mapping (no root-owned files)&#xD;
 - TV Everywhere (TVE) support&#xD;
 - Intel QuickSync hardware transcoding&#xD;
-- Auto-updates Channels DVR binary</Overview>
+- App handles its own updates (including pre-releases)</Overview>
   <Category>MediaServer:Video</Category>
   <WebUI>http://[IP]:8089</WebUI>
   <TemplateURL/>
@@ -35,6 +35,5 @@ Key Features:&#xD;
   <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Group ID - Use 100 for users on Unraid" Type="Variable" Display="always" Required="false" Mask="false">100</Config>
   <Config Name="Timezone" Target="TZ" Default="America/New_York" Mode="" Description="Timezone" Type="Variable" Display="always" Required="false" Mask="false">America/New_York</Config>
   <Config Name="UMASK" Target="UMASK" Default="022" Mode="" Description="File creation mask (022 = 755 dirs, 644 files)" Type="Variable" Display="advanced" Required="false" Mask="false">022</Config>
-  <Config Name="Update on Start" Target="UPDATE_ON_START" Default="true" Mode="" Description="Check for Channels DVR updates on container start" Type="Variable" Display="advanced" Required="false" Mask="false">true</Config>
   <Config Name="Intel GPU" Target="" Default="" Mode="" Description="Intel GPU for hardware transcoding" Type="Device" Display="always" Required="false" Mask="false">/dev/dri</Config>
 </Container>

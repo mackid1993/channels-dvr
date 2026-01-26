@@ -28,9 +28,6 @@ ENV UMASK=022
 ENV CHANNELS_DVR_DIR=/channels-dvr
 ENV CHANNELS_SHARES_DIR=/shares/DVR
 
-# Update on container start
-ENV UPDATE_ON_START=true
-
 # Install dependencies and Intel QuickSync drivers
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # Core utilities
