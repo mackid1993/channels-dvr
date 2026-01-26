@@ -31,7 +31,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev git \
     && git clone --depth 1 https://github.com/msantos/libkeepalive.git /tmp/libkeepalive \
     && cd /tmp/libkeepalive \
-    && gcc -shared -fPIC -o libkeepalive.so keepalive.c libkeepalive.c -ldl \
+    && gcc -D_GNU_SOURCE -nostartfiles -shared -fPIC -o libkeepalive.so keepalive.c libkeepalive.c -ldl \
     && cp libkeepalive.so /usr/lib/ \
     && cd / && rm -rf /tmp/libkeepalive \
     && apt-get purge -y gcc libc6-dev git \
