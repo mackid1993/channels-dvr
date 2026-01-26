@@ -9,11 +9,12 @@
   <Privileged>false</Privileged>
   <Support/>
   <Project>https://getchannels.com/</Project>
-  <Overview>Channels DVR Server for stable streaming.&#xD;
+  <Overview>Channels DVR Server with TCP connection tuning for stable streaming.&#xD;
 &#xD;
 Based on Debian Bookworm with minimal tini init system.&#xD;
 &#xD;
 Key Features:&#xD;
+- TCP connection tuning via libkeepalive (fixes NVIDIA Shield streaming issues)&#xD;
 - Proper PUID/PGID mapping (no root-owned files)&#xD;
 - TV Everywhere (TVE) support with Google Chrome&#xD;
 - Intel QuickSync hardware transcoding (pass /dev/dri)&#xD;
@@ -38,4 +39,6 @@ Key Features:&#xD;
   <Config Name="Intel GPU" Target="/dev/dri" Default="/dev/dri" Mode="" Description="Intel GPU for hardware transcoding" Type="Device" Display="always" Required="false" Mask="false">/dev/dri</Config>
   <Config Name="NVIDIA Visible Devices" Target="NVIDIA_VISIBLE_DEVICES" Default="" Mode="" Description="NVIDIA GPUs to use. Set to 'all' for all GPUs, or specific GPU ID like '0'. Leave empty to disable NVIDIA. Requires Unraid NVIDIA plugin." Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
   <Config Name="NVIDIA Driver Capabilities" Target="NVIDIA_DRIVER_CAPABILITIES" Default="compute,video,utility" Mode="" Description="NVIDIA capabilities: compute, video, utility, graphics. Default handles transcoding." Type="Variable" Display="advanced" Required="false" Mask="false">compute,video,utility</Config>
-  </Container>
+  <Config Name="TCP User Timeout" Target="TCP_USER_TIMEOUT" Default="0" Mode="" Description="Hard timeout (ms) for connections with unacknowledged data. Default 0 (disabled, recommended for streaming). Set higher values (e.g. 1800000 for 30 min) if connections pile up." Type="Variable" Display="advanced" Required="false" Mask="false">0</Config>
+  <Config Name="TCP No Delay" Target="TCP_NODELAY" Default="1" Mode="" Description="Disable Nagle's algorithm for lower streaming latency. 1=disabled (recommended), 0=enabled." Type="Variable" Display="advanced" Required="false" Mask="false">1</Config>
+</Container>
