@@ -30,7 +30,7 @@ Key Features:&#xD;
   <DonateLink/>
   <Requires/>
   <Config Name="Config Storage" Target="/channels-dvr" Default="/mnt/user/appdata/channels-dvr" Mode="rw" Description="Container Path: /channels-dvr - Stores Channels DVR configuration and binary" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/channels-dvr</Config>
-  <Config Name="Recordings" Target="/shares/DVR" Default="/mnt/user/data/DVR" Mode="rw" Description="Container Path: /shares/DVR - Where recordings are stored" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/data/DVR</Config>
+  <Config Name="Recordings" Target="/shares/DVR" Default="/mnt/user/TV/DVR" Mode="rw" Description="Container Path: /shares/DVR - Where recordings are stored" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/data/DVR</Config>
   <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="User ID - Use 99 for nobody on Unraid" Type="Variable" Display="always" Required="false" Mask="false">99</Config>
   <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Group ID - Use 100 for users on Unraid" Type="Variable" Display="always" Required="false" Mask="false">100</Config>
   <Config Name="Timezone" Target="TZ" Default="America/New_York" Mode="" Description="Timezone" Type="Variable" Display="always" Required="false" Mask="false">America/New_York</Config>
