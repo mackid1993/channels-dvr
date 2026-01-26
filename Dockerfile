@@ -6,9 +6,9 @@
 #   - Intel QuickSync support
 #   - TVE (TV Everywhere) with Chromium
 
-FROM lscr.io/linuxserver/baseimage-ubuntu:noble
+FROM ghcr.io/linuxserver/baseimage-ubuntu:noble
 
-LABEL maintainer="david"
+LABEL maintainer="mackid1993"
 LABEL description="Channels DVR Server with TVE support, Intel QuickSync, and TCP fixes"
 LABEL org.opencontainers.image.source="https://github.com/YOURUSER/channels-dvr-docker"
 
@@ -73,4 +73,3 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 
 # Volumes
 VOLUME ["/channels-dvr", "/shares/DVR"]
-
