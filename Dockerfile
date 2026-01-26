@@ -20,6 +20,8 @@ LABEL org.opencontainers.image.created="${BUILD_DATE}"
 ENV PUID=99
 ENV PGID=100
 ENV TZ=America/New_York
+# Limit Go threads to prevent container cgroup scheduling issues
+ENV GOMAXPROCS=2
 # NVIDIA GPU support (requires --runtime=nvidia or --gpus all)
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,video,utility

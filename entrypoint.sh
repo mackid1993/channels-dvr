@@ -59,6 +59,13 @@ if command -v nvidia-smi &> /dev/null; then
     echo "NVIDIA GPU detected"
 fi
 
+# TCP buffer tuning for stable streaming (may require host network mode)
+# These settings help prevent buffer underruns during streaming
+sysctl -w net.core.rmem_max=16777216 2>/dev/null && echo "TCP rmem_max set to 16MB" || true
+sysctl -w net.core.wmem_max=16777216 2>/dev/null && echo "TCP wmem_max set to 16MB" || true
+sysctl -w net.ipv4.tcp_rmem="4096 87380 16777216" 2>/dev/null && echo "TCP rmem tuned" || true
+sysctl -w net.ipv4.tcp_wmem="4096 65536 16777216" 2>/dev/null && echo "TCP wmem tuned" || true
+
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  Starting Channels DVR Server"
 echo "  Web UI: http://localhost:8089"
@@ -66,7 +73,6 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 
 # Run the command as the channels user with high I/O priority
 cd /channels-dvr
-# Use ionice for best-effort high priority I/O (class 2, priority 0)
-# Use nice for higher CPU priority (-10)
-# This helps ensure smooth streaming regardless of cgroup isolation
+# ionice: best-effort I/O class (2), highest priority (0) - WORKS in containers
+# nice: higher CPU priority (-10) - requires CAP_SYS_NICE, may not apply
 exec ionice -c 2 -n 0 nice -n -10 gosu channels "$@"
