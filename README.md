@@ -1,60 +1,48 @@
-# Channels DVR Docker
+# Channels DVR Docker Container
 
-A Docker container for [Channels DVR Server](https://getchannels.com/dvr-server/) based on linuxserver.io's Ubuntu Noble base image.
-
-## Why This Exists
-
-The official `fancybits/channels-dvr` container:
-- Runs as root (creates root-owned files)
-- Has stale dependencies (12+ months old)
-- No PUID/PGID mapping
-
-This container uses the linuxserver.io Ubuntu Noble base with proper user mapping and fresh dependencies.
+Docker container for [Channels DVR](https://getchannels.com/) with TVE support and hardware transcoding.
 
 ## Features
 
-- **linuxserver.io Ubuntu Noble base** - Well-maintained, stable
-- **TV Everywhere (TVE) support** - Chromium and xvfb included
-- **Intel QuickSync support** - VA-API drivers from Intel's repo
-- **NVIDIA support** - Works with `--gpus all` (drivers from host)
-- **User mapping** - PUID/PGID support for proper file permissions
-- **Auto-updates** - Downloads latest Channels DVR binary on start
+- **Simple & Stable**: Debian Bookworm base with minimal tini init system
+- **PUID/PGID Support**: Proper user mapping for Unraid and other systems
+- **TV Everywhere (TVE)**: Google Chrome for TVE authentication
+- **Intel QuickSync**: Hardware transcoding support
+- **NVIDIA GPU**: Support via nvidia-container-toolkit
+- **Auto-updates**: App handles its own updates (including pre-releases)
 
 ## Quick Start
-
-### Docker Run
 
 ```bash
 docker run -d \
   --name channels-dvr \
   --net=host \
-  --restart=unless-stopped \
-  -e PUID=99 \
-  -e PGID=100 \
+  -e PUID=1000 \
+  -e PGID=1000 \
   -e TZ=America/New_York \
-  -v /mnt/user/appdata/channels-dvr:/channels-dvr \
-  -v /mnt/user/data/DVR:/shares/DVR \
+  -v /path/to/config:/channels-dvr \
+  -v /path/to/recordings:/shares/DVR \
   --device /dev/dri:/dev/dri \
-  mackid1993/channels-dvr:latest
+  ghcr.io/mackid1993/channels-dvr:latest
 ```
 
-### Docker Compose
+## Docker Compose
 
 ```yaml
 version: "3.8"
 services:
   channels-dvr:
-    image: mackid1993/channels-dvr:latest
+    image: ghcr.io/mackid1993/channels-dvr:latest
     container_name: channels-dvr
     network_mode: host
     restart: unless-stopped
     environment:
-      - PUID=99
-      - PGID=100
+      - PUID=1000
+      - PGID=1000
       - TZ=America/New_York
     volumes:
-      - /mnt/user/appdata/channels-dvr:/channels-dvr
-      - /mnt/user/data/DVR:/shares/DVR
+      - /path/to/config:/channels-dvr
+      - /path/to/recordings:/shares/DVR
     devices:
       - /dev/dri:/dev/dri
 ```
@@ -63,19 +51,53 @@ services:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `PUID` | 99 | User ID (99 = nobody on Unraid) |
-| `PGID` | 100 | Group ID (100 = users on Unraid) |
+| `PUID` | 99 | User ID for file permissions |
+| `PGID` | 100 | Group ID for file permissions |
 | `TZ` | America/New_York | Timezone |
-| `UMASK` | 022 | File creation mask |
-| `UPDATE_ON_START` | true | Check for Channels DVR updates on container start |
-| `DVR_VERSION` | (latest) | Specific version to download |
 
 ## Volumes
 
 | Path | Description |
 |------|-------------|
-| `/channels-dvr` | Configuration and binary storage |
-| `/shares/DVR` | Recording storage |
+| `/channels-dvr` | Config directory and Channels DVR binary |
+| `/shares/DVR` | Recordings storage |
+
+## Hardware Transcoding
+
+### Intel QuickSync
+
+Pass through the Intel GPU:
+
+```bash
+--device /dev/dri:/dev/dri
+```
+
+### NVIDIA GPU
+
+Use nvidia-container-toolkit:
+
+```bash
+docker run --gpus all ...
+```
+
+Or with docker-compose:
+
+```yaml
+deploy:
+  resources:
+    reservations:
+      devices:
+        - capabilities: [gpu]
+```
+
+## Unraid Installation
+
+1. Go to Docker tab
+2. Add Container
+3. Use template URL or manually configure:
+   - Repository: `ghcr.io/mackid1993/channels-dvr:latest`
+   - Network: `host`
+   - Add path mappings and environment variables as shown above
 
 ## Ports
 
@@ -87,40 +109,12 @@ services:
 
 **Note:** `--net=host` is recommended for proper discovery.
 
-## Hardware Transcoding
-
-### Intel QuickSync
+## Building Locally
 
 ```bash
---device /dev/dri:/dev/dri
+docker build -t channels-dvr .
 ```
-
-### NVIDIA
-
-```bash
-docker run -d \
-  --name channels-dvr \
-  --net=host \
-  --gpus all \
-  -e NVIDIA_VISIBLE_DEVICES=all \
-  ...
-```
-
-## Updating to a Specific Version
-
-```bash
-docker exec -it channels-dvr bash -c "DVR_VERSION=2024.01.15.1234 /usr/local/bin/setup.sh"
-docker restart channels-dvr
-```
-
-## Migrating from Official Container
-
-Your existing `/channels-dvr` configuration directory is fully compatible:
-
-1. Stop the old container
-2. Start this container with the same volume mounts
-3. Your settings, recordings, and guide data will be preserved
 
 ## License
 
-This project is provided as-is. Channels DVR is a product of [Fancy Bits, LLC](https://getchannels.com/).
+This Docker image is provided as-is. Channels DVR is a commercial product - see [getchannels.com](https://getchannels.com/) for licensing.
