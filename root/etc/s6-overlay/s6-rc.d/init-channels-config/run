@@ -34,8 +34,7 @@ fi
 
 # Check for Intel GPU
 if [[ -e /dev/dri ]]; then
-    echo "Intel GPU detected, testing VA-API..."
-    s6-setuidgid abc vainfo 2>&1 | head -5 || echo "  VA-API not available"
+    echo "Intel GPU detected at /dev/dri"
 fi
 
 echo "Initialization complete"
