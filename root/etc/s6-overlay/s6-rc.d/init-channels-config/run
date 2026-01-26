@@ -16,8 +16,8 @@ chmod 755 /channels-dvr
 chown abc:abc /shares/DVR 2>/dev/null || true
 chmod 755 /shares/DVR 2>/dev/null || true
 
-# Download Channels DVR if not present
-if [[ ! -f /channels-dvr/channels-dvr ]]; then
+# Download Channels DVR if not present (official installer puts binary in latest/channels-dvr)
+if [[ ! -f /channels-dvr/latest/channels-dvr ]]; then
     echo "Channels DVR binary not found, downloading..."
     s6-setuidgid abc /usr/local/bin/setup.sh
 elif [[ "${UPDATE_ON_START}" == "true" ]]; then
@@ -28,8 +28,8 @@ else
 fi
 
 # Verify binary exists
-if [[ ! -f /channels-dvr/channels-dvr ]]; then
-    echo "FATAL: Channels DVR binary not found at /channels-dvr/channels-dvr"
+if [[ ! -f /channels-dvr/latest/channels-dvr ]]; then
+    echo "FATAL: Channels DVR binary not found at /channels-dvr/latest/channels-dvr"
     exit 1
 fi
 
