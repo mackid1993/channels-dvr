@@ -64,6 +64,9 @@ echo "  Starting Channels DVR Server"
 echo "  Web UI: http://localhost:8089"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Run the command as the channels user
+# Run the command as the channels user with high I/O priority
 cd /channels-dvr
-exec gosu channels "$@"
+# Use ionice for best-effort high priority I/O (class 2, priority 0)
+# Use nice for higher CPU priority (-10)
+# This helps ensure smooth streaming regardless of cgroup isolation
+exec ionice -c 2 -n 0 nice -n -10 gosu channels "$@"

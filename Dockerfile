@@ -25,8 +25,9 @@ ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
 
 # Install tini and core dependencies
+# util-linux provides ionice for I/O priority scheduling
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    tini curl ca-certificates wget gnupg xvfb ffmpeg iproute2 gosu \
+    tini curl ca-certificates wget gnupg xvfb ffmpeg iproute2 gosu util-linux \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Google Chrome for TVE
