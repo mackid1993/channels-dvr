@@ -1,59 +1,54 @@
-#!/bin/bash
+#!/bin/sh
 # =============================================================================
 # Channels DVR Setup Script
-# Downloads the Channels DVR binary directly from CDN
+# Based on official installer from getchannels.com
 # =============================================================================
 
 set -e
 
 CHANNELS_DIR="${CHANNELS_DVR_DIR:-/channels-dvr}"
-HOST="https://cdn.channelsdvr.net/dvr"
+host="https://cdn.channelsdvr.net/dvr"
+
+# Fetch function matching official installer
+fetch() {
+  curl -A "curl-dvr-installer-v1" -f -s "$1" -o "$2"
+}
 
 # Get OS and arch
 os=$(uname -s | tr '[A-Z]' '[a-z]')
 arch=$(uname -m)
 
-# Map architecture to Channels naming
-case "${arch}" in
-    x86_64)
-        arch="x86_64"
-        ;;
-    aarch64)
-        arch="aarch64"
-        ;;
-    armv7l)
-        arch="arm"
-        ;;
-esac
-
-PLATFORM="${os}-${arch}"
-echo "Platform: ${PLATFORM}"
+echo "Platform: ${os}-${arch}"
 echo "Install directory: ${CHANNELS_DIR}"
 
 # Create directory if it doesn't exist
 mkdir -p "${CHANNELS_DIR}"
 cd "${CHANNELS_DIR}"
 
-# Get latest version
+# Get latest version (or use DVR_VERSION env var if set)
 echo "Fetching latest version..."
-VERSION=$(curl -A "curl-dvr-installer-v1" -fsSL "${HOST}/latest.txt")
+version=$(fetch "$host/latest.txt" -)
 
-if [ -z "${VERSION}" ]; then
+if [ -n "$DVR_VERSION" ]; then
+  version="$DVR_VERSION"
+fi
+
+if [ -z "${version}" ]; then
     echo "ERROR: Could not get latest version"
     exit 1
 fi
 
-echo "Latest version: ${VERSION}"
+echo "Latest version: ${version}"
 
-# Download URL
-DOWNLOAD_URL="${HOST}/${PLATFORM}/channels-dvr-${VERSION}.tar.gz"
-echo "Downloading from: ${DOWNLOAD_URL}"
+# Download URL - matches official installer pattern
+download_url="${host}/${os}-${arch}/channels-dvr-${version}.tar.gz"
+echo "Downloading from: ${download_url}"
 
 # Download and extract
-curl -A "curl-dvr-installer-v1" -fL "${DOWNLOAD_URL}" | tar xz
+fetch "${download_url}" - | tar xz
 
 # Make executable
 chmod +x channels-dvr
 
-echo "Channels DVR ${VERSION} installation complete!"
+echo "Channels DVR ${version} installation complete!"
 ls -la "${CHANNELS_DIR}/channels-dvr"
