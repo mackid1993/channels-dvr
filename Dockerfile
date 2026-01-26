@@ -25,7 +25,7 @@ ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
 
 # TCP tuning via libkeepalive (Go overrides keepalive timing, but these work)
-ENV TCP_USER_TIMEOUT=600000
+ENV TCP_USER_TIMEOUT=1800000
 ENV TCP_NODELAY=1
 ENV LD_PRELOAD=/usr/lib/libkeepalive.so:/usr/lib/libkeepalive_listen.so:/usr/lib/libkeepalive_socket.so
 
