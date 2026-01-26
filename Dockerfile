@@ -1,15 +1,14 @@
 # Channels DVR Docker Container
 # Based on linuxserver.io Ubuntu base (stable, well-maintained)
-# Fixes:
+# Features:
 #   - Proper PUID/PGID user mapping (no root-owned files)
-#   - TCP connection tuning (fixes black screen / connection drops)
 #   - Intel QuickSync support
 #   - TVE (TV Everywhere) with Chromium
 
 FROM ghcr.io/linuxserver/baseimage-ubuntu:noble
 
 LABEL maintainer="david"
-LABEL description="Channels DVR Server with TVE support, Intel QuickSync, and TCP fixes"
+LABEL description="Channels DVR Server with TVE support and Intel QuickSync"
 LABEL org.opencontainers.image.source="https://github.com/YOURUSER/channels-dvr-docker"
 
 # Environment variables - linuxserver.io style
@@ -22,31 +21,43 @@ ENV UMASK=022
 ENV CHANNELS_DVR_DIR=/channels-dvr
 ENV CHANNELS_SHARES_DIR=/shares/DVR
 
-# TCP tuning
-ENV TCP_WMEM_DEFAULT=1048576
-ENV TCP_RMEM_DEFAULT=1048576
-
 # Update on container start
 ENV UPDATE_ON_START=true
 
-# Install dependencies
+# Install dependencies and Intel QuickSync drivers
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # Core utilities
     curl \
     ca-certificates \
     wget \
+    gnupg \
     # TVE support (chromium + xvfb)
     chromium \
     xvfb \
     # Video processing
     ffmpeg \
-    # Intel QuickSync / VA-API
-    intel-media-va-driver \
-    vainfo \
     # Networking tools
     iproute2 \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    && rm -rf /var/lib/apt/lists/*
+
+# Add Intel GPU repository for QuickSync (amd64 only)
+RUN if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
+    wget -qO - https://repositories.intel.com/gpu/intel-graphics.key | \
+    gpg --yes --dearmor --output /usr/share/keyrings/intel-graphics.gpg && \
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/intel-graphics.gpg] https://repositories.intel.com/gpu/ubuntu noble unified" | \
+    tee /etc/apt/sources.list.d/intel-gpu-noble.list && \
+    apt-get update && apt-get install -y --no-install-recommends \
+    intel-media-va-driver-non-free \
+    libmfx-gen1 \
+    libvpl2 \
+    vainfo && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*; \
+    fi
+
+# NVIDIA support: No packages needed in container!
+# NVIDIA drivers are injected at runtime via --gpus all or --runtime=nvidia
+# The host's libnvidia-encode/decode are mounted automatically by nvidia-container-toolkit
 
 # Create directories
 RUN mkdir -p /channels-dvr /shares/DVR /data
@@ -73,3 +84,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 
 # Volumes
 VOLUME ["/channels-dvr", "/shares/DVR"]
+

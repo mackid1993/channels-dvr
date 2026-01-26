@@ -9,15 +9,14 @@
   <Privileged>false</Privileged>
   <Support/>
   <Project>https://getchannels.com/</Project>
-  <Overview>Channels DVR Server with proper Unraid permissions, TVE support, Intel QuickSync, and TCP connection fixes.&#xD;
+  <Overview>Channels DVR Server with proper Unraid permissions, TVE support, and Intel QuickSync.&#xD;
 &#xD;
-This container fixes the TCP connection stability issues present in the official fancybits container that cause black screens and connection resets on Shield TV clients.&#xD;
+Based on linuxserver.io Ubuntu Noble base with proper PUID/PGID mapping.&#xD;
 &#xD;
 Key Features:&#xD;
 - Proper PUID/PGID mapping (no root-owned files)&#xD;
 - TV Everywhere (TVE) support&#xD;
 - Intel QuickSync hardware transcoding&#xD;
-- TCP tuning for connection stability&#xD;
 - Auto-updates Channels DVR binary</Overview>
   <Category>MediaServer:Video</Category>
   <WebUI>http://[IP]:8089</WebUI>
