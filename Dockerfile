@@ -24,34 +24,10 @@ ENV TZ=America/New_York
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
 
-# TCP tuning env vars (applied via libkeepalive at runtime)
-# TCP_USER_TIMEOUT=0 means disabled (recommended for long-lived streaming connections)
-ENV TCP_USER_TIMEOUT=0
-ENV TCP_NODELAY=1
-
 # Install tini and core dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tini curl ca-certificates wget gnupg xvfb ffmpeg iproute2 gosu \
     && rm -rf /var/lib/apt/lists/*
-
-# Build ALL libkeepalive variants for comprehensive TCP keepalive coverage
-# - libkeepalive.so: hooks connect() for outgoing connections
-# - libkeepalive_listen.so: hooks listen() for server sockets
-# - libkeepalive_socket.so: hooks socket() for all sockets
-RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev git \
-    && git clone --depth 1 https://github.com/msantos/libkeepalive.git /tmp/libkeepalive \
-    && cd /tmp/libkeepalive \
-    && gcc -D_GNU_SOURCE -nostartfiles -shared -fPIC -o libkeepalive.so keepalive.c libkeepalive.c -ldl \
-    && gcc -D_GNU_SOURCE -nostartfiles -shared -fPIC -o libkeepalive_listen.so keepalive.c libkeepalive_listen.c -ldl \
-    && gcc -D_GNU_SOURCE -nostartfiles -shared -fPIC -o libkeepalive_socket.so keepalive.c libkeepalive_socket.c -ldl \
-    && cp libkeepalive.so libkeepalive_listen.so libkeepalive_socket.so /usr/lib/ \
-    && cd / && rm -rf /tmp/libkeepalive \
-    && apt-get purge -y gcc libc6-dev git \
-    && apt-get autoremove -y \
-    && rm -rf /var/lib/apt/lists/*
-
-# Set LD_PRELOAD for libkeepalive (must be after libraries are built)
-ENV LD_PRELOAD=/usr/lib/libkeepalive.so:/usr/lib/libkeepalive_listen.so:/usr/lib/libkeepalive_socket.so
 
 # Install Google Chrome for TVE
 RUN curl -fsSL https://dl-ssl.google.com/linux/linux_signing_key.pub | \
