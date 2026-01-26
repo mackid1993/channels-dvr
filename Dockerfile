@@ -22,6 +22,8 @@ ENV PGID=100
 ENV TZ=America/New_York
 # Disable Go's async preemption to prevent epoll event loss in containers
 ENV GODEBUG=asyncpreemptoff=1
+# More frequent but shorter GC pauses to reduce race condition window
+ENV GOGC=50
 # NVIDIA GPU support (requires --runtime=nvidia or --gpus all)
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
