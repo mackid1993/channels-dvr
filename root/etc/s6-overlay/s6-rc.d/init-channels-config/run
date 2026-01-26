@@ -1,27 +1,41 @@
 #!/usr/bin/with-contenv bash
 # shellcheck shell=bash
 
+set -e
+
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  Channels DVR - Initialization"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Set permissions on config directory
+# Set permissions on config directory FIRST (before download)
+echo "Setting permissions..."
 chown -R abc:abc /channels-dvr
 chmod 755 /channels-dvr
 
 # Set permissions on recordings directory (top level only)
-chown abc:abc /shares/DVR
-chmod 755 /shares/DVR
+chown abc:abc /shares/DVR 2>/dev/null || true
+chmod 755 /shares/DVR 2>/dev/null || true
 
 # Download Channels DVR if not present
 if [[ ! -f /channels-dvr/channels-dvr ]]; then
     echo "Channels DVR binary not found, downloading..."
-    s6-setuidgid abc /usr/local/bin/setup.sh
+    if ! s6-setuidgid abc /usr/local/bin/setup.sh; then
+        echo "ERROR: Failed to download Channels DVR!"
+        echo "Trying as root..."
+        /usr/local/bin/setup.sh
+        chown abc:abc /channels-dvr/channels-dvr
+    fi
 elif [[ "${UPDATE_ON_START}" == "true" ]]; then
     echo "Checking for Channels DVR updates..."
-    s6-setuidgid abc /usr/local/bin/setup.sh || true
+    s6-setuidgid abc /usr/local/bin/setup.sh || echo "Update check failed, continuing with existing binary"
 else
     echo "Channels DVR binary found, skipping update check"
+fi
+
+# Verify binary exists
+if [[ ! -f /channels-dvr/channels-dvr ]]; then
+    echo "FATAL: Channels DVR binary not found at /channels-dvr/channels-dvr"
+    exit 1
 fi
 
 # Check for Intel GPU
