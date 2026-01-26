@@ -9,12 +9,13 @@
   <Privileged>false</Privileged>
   <Support/>
   <Project>https://getchannels.com/</Project>
-  <Overview>Channels DVR Server for stable streaming.&#xD;
+  <Overview>Channels DVR Server for stable NVIDIA Shield streaming.&#xD;
 &#xD;
 Based on Debian Bookworm with minimal tini init system.&#xD;
+Uses glibc (not Alpine's musl) which fixes Shield TV streaming issues.&#xD;
 &#xD;
 Key Features:&#xD;
-- Extended network capabilities (NET_ADMIN, NET_RAW, seccomp disabled)&#xD;
+- Stable streaming to NVIDIA Shield TV&#xD;
 - Proper PUID/PGID mapping (no root-owned files)&#xD;
 - TV Everywhere (TVE) support with Google Chrome&#xD;
 - Intel QuickSync hardware transcoding (pass /dev/dri)&#xD;
@@ -24,7 +25,7 @@ Key Features:&#xD;
   <WebUI>http://[IP]:8089</WebUI>
   <TemplateURL/>
   <Icon>https://raw.githubusercontent.com/timstephens24/docker-templates/master/img/channels-logo.png</Icon>
-  <ExtraParams>--cap-add=NET_ADMIN --cap-add=NET_RAW --cap-add=SYS_NICE --security-opt seccomp=unconfined</ExtraParams>
+  <ExtraParams></ExtraParams>
   <PostArgs/>
   <CPUset/>
   <DateInstalled></DateInstalled>

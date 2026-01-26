@@ -49,6 +49,26 @@ RUN wget -qO - https://repositories.intel.com/gpu/intel-graphics.key | \
     intel-media-va-driver-non-free libmfx-gen1 libvpl2 && \
     rm -rf /var/lib/apt/lists/*
 
+# Build libkeepalive for TCP tuning (fixes NVIDIA Shield streaming issues)
+# Go overrides kernel TCP settings, but TCP_USER_TIMEOUT can be injected via LD_PRELOAD
+RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev git \
+    && git clone --depth 1 https://github.com/msantos/libkeepalive.git /tmp/libkeepalive \
+    && cd /tmp/libkeepalive \
+    && gcc -D_GNU_SOURCE -nostartfiles -shared -fPIC -o libkeepalive.so keepalive.c libkeepalive.c -ldl \
+    && gcc -D_GNU_SOURCE -nostartfiles -shared -fPIC -o libkeepalive_listen.so keepalive.c libkeepalive_listen.c -ldl \
+    && gcc -D_GNU_SOURCE -nostartfiles -shared -fPIC -o libkeepalive_socket.so keepalive.c libkeepalive_socket.c -ldl \
+    && cp libkeepalive.so libkeepalive_listen.so libkeepalive_socket.so /usr/lib/ \
+    && cd / && rm -rf /tmp/libkeepalive \
+    && apt-get purge -y gcc libc6-dev git \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
+
+# TCP tuning via libkeepalive (set AFTER libraries are built)
+# 5 hour timeout = 18000000 ms
+ENV TCP_USER_TIMEOUT=18000000
+ENV TCP_NODELAY=1
+ENV LD_PRELOAD=/usr/lib/libkeepalive.so:/usr/lib/libkeepalive_listen.so:/usr/lib/libkeepalive_socket.so
+
 # Create directories
 RUN mkdir -p /channels-dvr /shares/DVR
 
