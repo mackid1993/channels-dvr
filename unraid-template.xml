@@ -25,7 +25,7 @@ Key Features:&#xD;
   <WebUI>http://[IP]:8089</WebUI>
   <TemplateURL/>
   <Icon>https://raw.githubusercontent.com/timstephens24/docker-templates/master/img/channels-logo.png</Icon>
-  <ExtraParams></ExtraParams>
+  <ExtraParams>--cgroupns=host</ExtraParams>
   <PostArgs/>
   <CPUset/>
   <DateInstalled></DateInstalled>
