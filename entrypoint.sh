@@ -24,7 +24,7 @@ if [ "${TCP_KEEPALIVE:-1}" = "1" ]; then
     # Additional TCP tuning
     export TCP_NODELAY=${TCP_NODELAY:-1}          # Disable Nagle's algorithm
 
-    export LD_PRELOAD=/usr/lib/libkeepalive.so
+    export LD_PRELOAD=/usr/lib/libkeepalive_socket.so
     KEEPALIVE_STATUS="enabled (${TCP_KEEPIDLE}s idle, ${TCP_KEEPINTVL}s interval, ${TCP_KEEPCNT} probes, timeout=${TCP_USER_TIMEOUT}ms)"
 else
     KEEPALIVE_STATUS="disabled"

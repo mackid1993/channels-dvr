@@ -27,12 +27,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tini curl ca-certificates wget gnupg xvfb ffmpeg iproute2 gosu \
     && rm -rf /var/lib/apt/lists/*
 
-# Build libkeepalive for per-process TCP keepalive tuning
+# Build libkeepalive_socket for per-process TCP tuning on ALL sockets
+# (libkeepalive.so only affects connect(), we need socket() for server accepts)
 RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev git \
     && git clone --depth 1 https://github.com/msantos/libkeepalive.git /tmp/libkeepalive \
     && cd /tmp/libkeepalive \
-    && gcc -D_GNU_SOURCE -nostartfiles -shared -fPIC -o libkeepalive.so keepalive.c libkeepalive.c -ldl \
-    && cp libkeepalive.so /usr/lib/ \
+    && gcc -D_GNU_SOURCE -nostartfiles -shared -fPIC -o libkeepalive_socket.so keepalive.c libkeepalive_socket.c -ldl \
+    && cp libkeepalive_socket.so /usr/lib/ \
     && cd / && rm -rf /tmp/libkeepalive \
     && apt-get purge -y gcc libc6-dev git \
     && apt-get autoremove -y \
