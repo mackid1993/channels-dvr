@@ -9,16 +9,20 @@ set -e
 PUID=${PUID:-99}
 PGID=${PGID:-100}
 
-# TCP keepalive via libkeepalive - DISABLED pending investigation
-# The ~6 minute stream death happens regardless of keepalive settings,
-# indicating the root cause is elsewhere. Keeping code for future use.
-# Set TCP_KEEPALIVE=1 to enable if needed.
-if [ "${TCP_KEEPALIVE:-0}" = "1" ]; then
-    export TCP_KEEPIDLE=${TCP_KEEPIDLE:-300}
-    export TCP_KEEPINTVL=${TCP_KEEPINTVL:-60}
-    export TCP_KEEPCNT=${TCP_KEEPCNT:-3}
+# TCP stack tuning via libkeepalive (per-process, doesn't affect host)
+# Set TCP_KEEPALIVE=0 to disable
+if [ "${TCP_KEEPALIVE:-1}" = "1" ]; then
+    # Keepalive settings - moderate timing
+    export TCP_KEEPIDLE=${TCP_KEEPIDLE:-300}      # 5 min before first probe
+    export TCP_KEEPINTVL=${TCP_KEEPINTVL:-60}     # 60 sec probe interval
+    export TCP_KEEPCNT=${TCP_KEEPCNT:-5}          # 5 probes before giving up
+
+    # Additional TCP tuning
+    export TCP_NODELAY=${TCP_NODELAY:-1}          # Disable Nagle's algorithm
+    export TCP_DEFER_ACCEPT=${TCP_DEFER_ACCEPT:-0}  # Don't delay accept
+
     export LD_PRELOAD=/usr/lib/libkeepalive.so
-    KEEPALIVE_STATUS="enabled (${TCP_KEEPIDLE}s idle, ${TCP_KEEPINTVL}s interval, ${TCP_KEEPCNT} probes)"
+    KEEPALIVE_STATUS="enabled (${TCP_KEEPIDLE}s idle, ${TCP_KEEPINTVL}s interval, ${TCP_KEEPCNT} probes, nodelay=${TCP_NODELAY})"
 else
     KEEPALIVE_STATUS="disabled"
 fi
