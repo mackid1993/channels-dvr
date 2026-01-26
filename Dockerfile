@@ -24,11 +24,10 @@ ENV TZ=America/New_York
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
 
-# TCP tuning via libkeepalive (Go overrides keepalive timing, but these work)
+# TCP tuning env vars (applied via libkeepalive at runtime)
 # TCP_USER_TIMEOUT=0 means disabled (recommended for long-lived streaming connections)
 ENV TCP_USER_TIMEOUT=0
 ENV TCP_NODELAY=1
-ENV LD_PRELOAD=/usr/lib/libkeepalive.so:/usr/lib/libkeepalive_listen.so:/usr/lib/libkeepalive_socket.so
 
 # Install tini and core dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -50,6 +49,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev g
     && apt-get purge -y gcc libc6-dev git \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
+
+# Set LD_PRELOAD for libkeepalive (must be after libraries are built)
+ENV LD_PRELOAD=/usr/lib/libkeepalive.so:/usr/lib/libkeepalive_listen.so:/usr/lib/libkeepalive_socket.so
 
 # Install Google Chrome for TVE
 RUN curl -fsSL https://dl-ssl.google.com/linux/linux_signing_key.pub | \
