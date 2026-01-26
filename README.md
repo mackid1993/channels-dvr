@@ -35,7 +35,7 @@ docker run -d \
   -v /mnt/user/appdata/channels-dvr:/channels-dvr \
   -v /mnt/user/data/DVR:/shares/DVR \
   --device /dev/dri:/dev/dri \
-  ghcr.io/YOUR_USERNAME/channels-dvr:latest
+  mackid1993/channels-dvr:latest
 ```
 
 ### Docker Compose
@@ -44,7 +44,7 @@ docker run -d \
 version: "3.8"
 services:
   channels-dvr:
-    image: ghcr.io/YOUR_USERNAME/channels-dvr:latest
+    image: mackid1993/channels-dvr:latest
     container_name: channels-dvr
     network_mode: host
     restart: unless-stopped

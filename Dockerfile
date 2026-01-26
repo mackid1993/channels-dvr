@@ -7,10 +7,16 @@
 
 FROM ghcr.io/linuxserver/baseimage-ubuntu:noble
 
+# Build args for versioning
+ARG BUILD_DATE
+ARG VERSION
+
 LABEL maintainer="mackid1993"
-LABEL description="Channels DVR Server with TVE support and Intel QuickSync"
-LABEL org.opencontainers.image.source="https://github.com/mackid1993/channels-dvr-docker"
-LABEL org.opencontainers.image.version="1.0.0"
+LABEL org.opencontainers.image.title="Channels DVR"
+LABEL org.opencontainers.image.description="Channels DVR Server with TVE support and Intel QuickSync"
+LABEL org.opencontainers.image.source="https://github.com/mackid1993/channels-dvr"
+LABEL org.opencontainers.image.version="${VERSION}"
+LABEL org.opencontainers.image.created="${BUILD_DATE}"
 
 # Environment variables - linuxserver.io style
 ENV PUID=99
@@ -85,3 +91,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 
 # Volumes
 VOLUME ["/channels-dvr", "/shares/DVR"]
+

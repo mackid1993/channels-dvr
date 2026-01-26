@@ -2,7 +2,7 @@
 <Container version="2">
   <Name>channels-dvr</Name>
   <Repository>mackid1993/channels-dvr:latest</Repository>
-  <Registry>https://ghcr.io/</Registry>
+  <Registry>https://hub.docker.com/</Registry>
   <Network>host</Network>
   <MyIP/>
   <Shell>bash</Shell>
