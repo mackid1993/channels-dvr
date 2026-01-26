@@ -39,14 +39,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gosu \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Google Chrome for TVE
-RUN curl -fsSL https://dl-ssl.google.com/linux/linux_signing_key.pub | \
+# Install Google Chrome for TVE (amd64 only)
+RUN if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
+    curl -fsSL https://dl-ssl.google.com/linux/linux_signing_key.pub | \
     gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg && \
     echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > \
     /etc/apt/sources.list.d/google-chrome.list && \
     apt-get update && \
     apt-get install -y --no-install-recommends google-chrome-stable && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/*; \
+    fi
 
 # Install Intel GPU drivers for QuickSync (amd64 only)
 RUN if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
