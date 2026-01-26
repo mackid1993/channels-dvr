@@ -36,7 +36,7 @@ cd "${CHANNELS_DIR}"
 
 # Get latest version
 echo "Fetching latest version..."
-VERSION=$(curl -fsSL "${HOST}/latest.txt")
+VERSION=$(curl -A "curl-dvr-installer-v1" -fsSL "${HOST}/latest.txt")
 
 if [ -z "${VERSION}" ]; then
     echo "ERROR: Could not get latest version"
@@ -50,7 +50,7 @@ DOWNLOAD_URL="${HOST}/${PLATFORM}/channels-dvr-${VERSION}.tar.gz"
 echo "Downloading from: ${DOWNLOAD_URL}"
 
 # Download and extract
-curl -fL "${DOWNLOAD_URL}" | tar xz
+curl -A "curl-dvr-installer-v1" -fL "${DOWNLOAD_URL}" | tar xz
 
 # Make executable
 chmod +x channels-dvr
