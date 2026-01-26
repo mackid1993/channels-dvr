@@ -16,9 +16,8 @@ export KEEPCNT=3       # 3 probes before giving up
 export LD_PRELOAD=/usr/lib/libkeepalive.so
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  TCP Keepalive: ${KEEPIDLE}s idle, ${KEEPINTVL}s interval, ${KEEPCNT} probes"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  Channels DVR - Starting"
+echo "  TCP Keepalive: ${KEEPIDLE}s idle, ${KEEPINTVL}s interval, ${KEEPCNT} probes"
 echo "  UID: $PUID | GID: $PGID"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
