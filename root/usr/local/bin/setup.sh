@@ -40,9 +40,9 @@ fi
 
 echo "Latest version: ${version}"
 
-# Download URL - matches official installer pattern
-download_url="${host}/${os}-${arch}/channels-dvr-${version}.tar.gz"
-echo "Downloading from: ${download_url}"
+# Download URL - CDN always serves latest at fixed URL
+download_url="${host}/${os}-${arch}/channels-dvr.tar.gz"
+echo "Downloading version ${version} from: ${download_url}"
 
 # Download and extract
 fetch "${download_url}" - | tar xz
