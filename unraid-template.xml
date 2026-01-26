@@ -6,7 +6,7 @@
   <Network>host</Network>
   <MyIP/>
   <Shell>bash</Shell>
-  <Privileged>false</Privileged>
+  <Privileged>true</Privileged>
   <Support/>
   <Project>https://getchannels.com/</Project>
   <Overview>Channels DVR Server with proper Unraid permissions, TVE support, and hardware transcoding.&#xD;
