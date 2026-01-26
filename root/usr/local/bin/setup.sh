@@ -1,31 +1,32 @@
 #!/bin/bash
 # =============================================================================
 # Channels DVR Setup Script
-# Downloads the Channels DVR binary directly
+# Downloads the Channels DVR binary directly from CDN
 # =============================================================================
 
 set -e
 
 CHANNELS_DIR="${CHANNELS_DVR_DIR:-/channels-dvr}"
-ARCH=$(uname -m)
+HOST="https://cdn.channelsdvr.net/dvr"
 
-# Map architecture
-case "${ARCH}" in
+# Get OS and arch
+os=$(uname -s | tr '[A-Z]' '[a-z]')
+arch=$(uname -m)
+
+# Map architecture to Channels naming
+case "${arch}" in
     x86_64)
-        PLATFORM="linux-x86_64"
+        arch="x86_64"
         ;;
-    aarch64|arm64)
-        PLATFORM="linux-aarch64"
+    aarch64)
+        arch="aarch64"
         ;;
     armv7l)
-        PLATFORM="linux-arm"
-        ;;
-    *)
-        echo "Unsupported architecture: ${ARCH}"
-        exit 1
+        arch="arm"
         ;;
 esac
 
+PLATFORM="${os}-${arch}"
 echo "Platform: ${PLATFORM}"
 echo "Install directory: ${CHANNELS_DIR}"
 
@@ -33,33 +34,26 @@ echo "Install directory: ${CHANNELS_DIR}"
 mkdir -p "${CHANNELS_DIR}"
 cd "${CHANNELS_DIR}"
 
-# Get latest version info
+# Get latest version
 echo "Fetching latest version..."
-LATEST_URL="https://getchannels.com/dvr/latest?os=${PLATFORM}"
-DOWNLOAD_URL=$(curl -fsSL "${LATEST_URL}")
+VERSION=$(curl -fsSL "${HOST}/latest.txt")
 
-if [ -z "${DOWNLOAD_URL}" ]; then
-    echo "ERROR: Could not get download URL"
+if [ -z "${VERSION}" ]; then
+    echo "ERROR: Could not get latest version"
     exit 1
 fi
 
+echo "Latest version: ${VERSION}"
+
+# Download URL
+DOWNLOAD_URL="${HOST}/${PLATFORM}/channels-dvr-${VERSION}.tar.gz"
 echo "Downloading from: ${DOWNLOAD_URL}"
 
-# Download the binary
-curl -fL -o channels-dvr.new "${DOWNLOAD_URL}"
+# Download and extract
+curl -fL "${DOWNLOAD_URL}" | tar xz
 
 # Make executable
-chmod +x channels-dvr.new
+chmod +x channels-dvr
 
-# Replace existing binary
-if [ -f channels-dvr ]; then
-    echo "Replacing existing binary..."
-    rm -f channels-dvr.old
-    mv channels-dvr channels-dvr.old 2>/dev/null || true
-fi
-
-mv channels-dvr.new channels-dvr
-
-echo "Channels DVR installation complete!"
+echo "Channels DVR ${VERSION} installation complete!"
 ls -la "${CHANNELS_DIR}/channels-dvr"
-
