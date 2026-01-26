@@ -6,7 +6,7 @@
   <Network>host</Network>
   <MyIP/>
   <Shell>bash</Shell>
-  <Privileged>true</Privileged>
+  <Privileged>false</Privileged>
   <Support/>
   <Project>https://getchannels.com/</Project>
   <Overview>Channels DVR Server with proper Unraid permissions, TVE support, and hardware transcoding.&#xD;
@@ -23,7 +23,7 @@ Key Features:&#xD;
   <WebUI>http://[IP]:8089</WebUI>
   <TemplateURL/>
   <Icon>https://raw.githubusercontent.com/timstephens24/docker-templates/master/img/channels-logo.png</Icon>
-  <ExtraParams>--sysctl net.ipv4.tcp_keepalive_time=300 --sysctl net.ipv4.tcp_keepalive_intvl=60 --sysctl net.ipv4.tcp_keepalive_probes=3 --ulimit nofile=100000:100000</ExtraParams>
+  <ExtraParams>--ulimit nofile=100000:100000</ExtraParams>
   <PostArgs/>
   <CPUset/>
   <DateInstalled></DateInstalled>

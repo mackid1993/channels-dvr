@@ -9,14 +9,14 @@ set -e
 PUID=${PUID:-99}
 PGID=${PGID:-100}
 
-# TCP tuning for streaming stability (requires host networking)
-echo "Applying TCP optimizations for streaming..."
-sysctl -w net.ipv4.tcp_keepalive_time=300 2>/dev/null || true
-sysctl -w net.ipv4.tcp_keepalive_intvl=60 2>/dev/null || true
-sysctl -w net.ipv4.tcp_keepalive_probes=3 2>/dev/null || true
-sysctl -w net.core.somaxconn=2048 2>/dev/null || true
-sysctl -w net.ipv4.tcp_max_syn_backlog=2048 2>/dev/null || true
+# TCP keepalive settings via libkeepalive (per-process, doesn't affect host)
+export KEEPIDLE=300    # 5 minutes before first probe (vs 2hr default)
+export KEEPINTVL=60    # 60 second probe interval
+export KEEPCNT=3       # 3 probes before giving up
+export LD_PRELOAD=/usr/lib/libkeepalive.so
 
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  TCP Keepalive: ${KEEPIDLE}s idle, ${KEEPINTVL}s interval, ${KEEPCNT} probes"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  Channels DVR - Starting"
 echo "  UID: $PUID | GID: $PGID"

@@ -37,7 +37,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     iproute2 \
     gosu \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
+
+# Build libkeepalive for per-process TCP keepalive settings
+RUN curl -fsSL https://github.com/msantos/libkeepalive/archive/refs/tags/0.3.tar.gz | tar xz && \
+    cd libkeepalive-0.3 && \
+    make && \
+    cp libkeepalive.so /usr/lib/ && \
+    cd .. && rm -rf libkeepalive-0.3 && \
+    apt-get purge -y build-essential && apt-get autoremove -y
 
 # Install Google Chrome for TVE (amd64 only)
 RUN if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
