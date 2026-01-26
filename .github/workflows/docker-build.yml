@@ -23,8 +23,7 @@ on:
 
 env:
   # Change these to your Docker Hub username and image name
-  DOCKERHUB_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/channels-dvr
-  GHCR_IMAGE: ghcr.io/${{ github.repository_owner }}/channels-dvr
+  DOCKERHUB_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/docker-channels
 
 jobs:
   build:
