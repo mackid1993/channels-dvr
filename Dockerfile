@@ -25,8 +25,8 @@ ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
 
 # TCP tuning env vars (applied via libkeepalive at runtime)
-# TCP_USER_TIMEOUT=0 means disabled (recommended for long-lived streaming connections)
-ENV TCP_USER_TIMEOUT=0
+# TCP_USER_TIMEOUT in ms - 5 days (432000000ms) matches kernel default
+ENV TCP_USER_TIMEOUT=432000000
 ENV TCP_NODELAY=1
 
 # Install tini and core dependencies
