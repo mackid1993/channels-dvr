@@ -4,11 +4,9 @@
 #   - Intel QuickSync support
 #   - NVIDIA GPU support (via nvidia-container-toolkit)
 #   - TVE (TV Everywhere) with Google Chrome
-#   - TCP keepalive tuning via libkeepalive
 
 FROM debian:bookworm-slim
 
-# Build args for versioning
 ARG BUILD_DATE
 ARG VERSION
 
@@ -19,7 +17,6 @@ LABEL org.opencontainers.image.source="https://github.com/mackid1993/channels-dv
 LABEL org.opencontainers.image.version="${VERSION}"
 LABEL org.opencontainers.image.created="${BUILD_DATE}"
 
-# Environment variables
 ENV PUID=99
 ENV PGID=100
 ENV TZ=America/New_York
@@ -30,11 +27,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tini curl ca-certificates wget gnupg xvfb ffmpeg iproute2 gosu \
     && rm -rf /var/lib/apt/lists/*
 
-# Build libkeepalive for TCP keepalive tuning
-RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev make \
-    && curl -fsSL https://github.com/msantos/libkeepalive/archive/refs/tags/0.3.tar.gz | tar xz \
-    && cd libkeepalive-0.3 && make && cp libkeepalive.so /usr/lib/ && cd .. && rm -rf libkeepalive-0.3 \
-    && apt-get purge -y gcc libc6-dev make && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
+# Build libkeepalive for per-process TCP keepalive tuning
+RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev make git \
+    && git clone --depth 1 https://github.com/msantos/libkeepalive.git /tmp/libkeepalive \
+    && cd /tmp/libkeepalive \
+    && make libkeepalive.so \
+    && cp libkeepalive.so /usr/lib/ \
+    && cd / && rm -rf /tmp/libkeepalive \
+    && apt-get purge -y gcc libc6-dev make git \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install Google Chrome for TVE
 RUN curl -fsSL https://dl-ssl.google.com/linux/linux_signing_key.pub | \
