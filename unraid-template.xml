@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <Container version="2">
   <Name>channels-dvr</Name>
-  <Repository>ghcr.io/YOUR_USERNAME/channels-dvr:latest</Repository>
+  <Repository>mackid1993/channels-dvr:latest</Repository>
   <Registry>https://ghcr.io/</Registry>
   <Network>host</Network>
   <MyIP/>
