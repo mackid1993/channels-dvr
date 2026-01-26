@@ -3,7 +3,7 @@
 # Features:
 #   - Proper PUID/PGID user mapping (no root-owned files)
 #   - Intel QuickSync support
-#   - TVE (TV Everywhere) with Chromium
+#   - TVE (TV Everywhere) with Google Chrome
 
 FROM ghcr.io/linuxserver/baseimage-ubuntu:noble
 
@@ -28,21 +28,29 @@ ENV UMASK=022
 ENV CHANNELS_DVR_DIR=/channels-dvr
 ENV CHANNELS_SHARES_DIR=/shares/DVR
 
-# Install dependencies and Intel QuickSync drivers
+# Install dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # Core utilities
     curl \
     ca-certificates \
     wget \
     gnupg \
-    # TVE support (chromium + xvfb)
-    chromium \
+    # TVE support (xvfb for headless browser)
     xvfb \
     # Video processing
     ffmpeg \
     # Networking tools
     iproute2 \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Google Chrome for TVE (chromium in Noble is snap-only, doesn't work in Docker)
+RUN curl -fsSL https://dl-ssl.google.com/linux/linux_signing_key.pub | \
+    gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg && \
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | \
+    tee /etc/apt/sources.list.d/google-chrome.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends google-chrome-stable && \
+    rm -rf /var/lib/apt/lists/*
 
 # Add Intel GPU repository for QuickSync (amd64 only)
 RUN if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
