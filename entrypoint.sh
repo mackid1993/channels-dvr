@@ -13,12 +13,13 @@ PGID=${PGID:-100}
 # Set TCP_KEEPALIVE=0 to disable, or customize values via environment
 if [ "${TCP_KEEPALIVE:-1}" = "1" ]; then
     # libkeepalive uses TCP_* prefix for these variables
-    export TCP_KEEPIDLE=${TCP_KEEPIDLE:-60}      # 60 seconds before first probe
-    export TCP_KEEPINTVL=${TCP_KEEPINTVL:-10}    # 10 second probe interval
-    export TCP_KEEPCNT=${TCP_KEEPCNT:-6}         # 6 probes before giving up
-    export TCP_USER_TIMEOUT=${TCP_USER_TIMEOUT:-120000}  # 120 seconds hard limit (in ms)
+    # Use long intervals to avoid killing active streams
+    export TCP_KEEPIDLE=${TCP_KEEPIDLE:-1800}     # 30 minutes before first probe
+    export TCP_KEEPINTVL=${TCP_KEEPINTVL:-300}    # 5 minute probe interval
+    export TCP_KEEPCNT=${TCP_KEEPCNT:-3}          # 3 probes before giving up
+    export TCP_USER_TIMEOUT=${TCP_USER_TIMEOUT:-0}  # 0 = system default (disabled)
     export LD_PRELOAD=/usr/lib/libkeepalive.so
-    KEEPALIVE_STATUS="enabled (${TCP_KEEPIDLE}s idle, ${TCP_KEEPINTVL}s interval, ${TCP_KEEPCNT} probes, ${TCP_USER_TIMEOUT}ms timeout)"
+    KEEPALIVE_STATUS="enabled (${TCP_KEEPIDLE}s idle, ${TCP_KEEPINTVL}s interval, ${TCP_KEEPCNT} probes)"
 else
     KEEPALIVE_STATUS="disabled"
 fi
