@@ -8,7 +8,7 @@
 
 FROM ghcr.io/linuxserver/baseimage-ubuntu:noble
 
-LABEL maintainer="mackid1993"
+LABEL maintainer="david"
 LABEL description="Channels DVR Server with TVE support, Intel QuickSync, and TCP fixes"
 LABEL org.opencontainers.image.source="https://github.com/YOURUSER/channels-dvr-docker"
 
@@ -35,13 +35,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
     wget \
-    # TVE support (same as fancybits uses chromium + xvfb)
-    chromium-browser \
+    # TVE support (chromium + xvfb)
+    chromium \
     xvfb \
     # Video processing
     ffmpeg \
     # Intel QuickSync / VA-API
-    intel-media-va-driver-non-free \
+    intel-media-va-driver \
     vainfo \
     # Networking tools
     iproute2 \
