@@ -8,4 +8,4 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 
 cd /channels-dvr
 
-exec s6-setuidgid abc /channels-dvr/channels-dvr
+exec s6-setuidgid abc /channels-dvr/channels-dvr/latest/channels-dvr
