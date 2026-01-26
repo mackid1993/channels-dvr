@@ -19,4 +19,4 @@ echo "Running official Channels DVR installer..."
 curl -f -s https://getchannels.com/dvr/setup.sh | DOWNLOAD_ONLY=1 sh
 
 echo "Channels DVR installation complete!"
-ls -la "${CHANNELS_DIR}/latest/channels-dvr"
+ls -la "${CHANNELS_DIR}/channels-dvr"
