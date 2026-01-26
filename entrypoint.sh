@@ -9,15 +9,14 @@ set -e
 PUID=${PUID:-99}
 PGID=${PGID:-100}
 
-# TCP keepalive settings via libkeepalive (per-process, doesn't affect host)
-# Set TCP_KEEPALIVE=0 to disable, or customize values via environment
-if [ "${TCP_KEEPALIVE:-1}" = "1" ]; then
-    # libkeepalive uses TCP_* prefix for these variables
-    # Use long intervals to avoid killing active streams
-    export TCP_KEEPIDLE=${TCP_KEEPIDLE:-1800}     # 30 minutes before first probe
-    export TCP_KEEPINTVL=${TCP_KEEPINTVL:-300}    # 5 minute probe interval
-    export TCP_KEEPCNT=${TCP_KEEPCNT:-3}          # 3 probes before giving up
-    export TCP_USER_TIMEOUT=${TCP_USER_TIMEOUT:-0}  # 0 = system default (disabled)
+# TCP keepalive via libkeepalive - DISABLED pending investigation
+# The ~6 minute stream death happens regardless of keepalive settings,
+# indicating the root cause is elsewhere. Keeping code for future use.
+# Set TCP_KEEPALIVE=1 to enable if needed.
+if [ "${TCP_KEEPALIVE:-0}" = "1" ]; then
+    export TCP_KEEPIDLE=${TCP_KEEPIDLE:-300}
+    export TCP_KEEPINTVL=${TCP_KEEPINTVL:-60}
+    export TCP_KEEPCNT=${TCP_KEEPCNT:-3}
     export LD_PRELOAD=/usr/lib/libkeepalive.so
     KEEPALIVE_STATUS="enabled (${TCP_KEEPIDLE}s idle, ${TCP_KEEPINTVL}s interval, ${TCP_KEEPCNT} probes)"
 else
