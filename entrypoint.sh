@@ -59,6 +59,19 @@ if command -v nvidia-smi &> /dev/null; then
     echo "NVIDIA GPU detected"
 fi
 
+# TCP timeout hardening (opt-in)
+# Reduces tcp_retries2 to clean up dead connections faster (~51sec vs ~15min)
+# Note: With --net=host this affects the host. Requires CAP_NET_ADMIN.
+if [ "${TCP_TUNING:-0}" = "1" ]; then
+    echo "TCP tuning enabled (tcp_retries2=${TCP_RETRIES2:-8})"
+    if sysctl -w net.ipv4.tcp_retries2="${TCP_RETRIES2:-8}" > /dev/null 2>&1; then
+        echo "  tcp_retries2 set to ${TCP_RETRIES2:-8}"
+    else
+        echo "  WARNING: Could not set tcp_retries2."
+        echo "  Add --cap-add=NET_ADMIN or set on host: sysctl -w net.ipv4.tcp_retries2=8"
+    fi
+fi
+
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  Starting Channels DVR Server"
 echo "  Web UI: http://localhost:8089"

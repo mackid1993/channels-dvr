@@ -20,10 +20,10 @@ LABEL org.opencontainers.image.created="${BUILD_DATE}"
 ENV PUID=99
 ENV PGID=100
 ENV TZ=America/New_York
-# Disable Go's async preemption to prevent epoll event loss in containers
-ENV GODEBUG=asyncpreemptoff=1
-# More frequent but shorter GC pauses to reduce race condition window
-ENV GOGC=50
+# TCP timeout hardening (opt-in, requires --cap-add=NET_ADMIN)
+# Set TCP_TUNING=1 to reduce dead connection timeout from ~15min to ~51sec
+ENV TCP_TUNING=0
+ENV TCP_RETRIES2=8
 # NVIDIA GPU support (requires --runtime=nvidia or --gpus all)
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,video,utility

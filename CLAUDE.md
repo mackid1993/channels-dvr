@@ -29,31 +29,51 @@ ENV LD_PRELOAD=/usr/lib/libkeepalive.so
 
 **Result:** Made things worse. `LD_PRELOAD` intercepted ALL socket calls in the container (not just Channels DVR, but also Chrome, curl, etc.), causing unpredictable behavior. Streams died at 6-15 minutes depending on TCP_USER_TIMEOUT value.
 
-### sysctl TCP tuning
+**Why it was fundamentally flawed:** Go's runtime on Linux uses raw syscalls via assembly (`RawSyscall6` → `SYS_ACCEPT4`, `SYS_CONNECT`, etc.), completely bypassing libc. `LD_PRELOAD` intercepts libc function wrappers, not kernel syscalls. This means **LD_PRELOAD cannot intercept Go's network operations at all.** The libkeepalive library never reached the DVR binary's sockets — it only affected Chrome, curl, and other C programs in the container.
 
-Attempted kernel-level TCP tuning:
+### sysctl TCP keepalive tuning
+
+Attempted kernel-level TCP keepalive tuning:
 ```bash
 sysctl -w net.ipv4.tcp_keepalive_time=300
 ```
 
-**Result:** Did not work. Go overrides kernel TCP keepalive settings at the socket level via `setsockopt()`.
+**Result:** Did not work. Go overrides kernel TCP keepalive settings at the socket level via `setsockopt()`. Go sets `TCP_KEEPIDLE=15s`, `TCP_KEEPINTVL=15s` on every socket it creates.
 
 ### Adding Linux capabilities
 
 Tried adding NET_ADMIN, NET_RAW, SYS_NICE capabilities and disabling seccomp.
 
-**Result:** Not needed. The simple Debian base works without any special capabilities.
+**Result:** Not needed for the glibc fix. Capabilities are only needed for the optional `tcp_retries2` hardening (see below).
+
+### Go Runtime Tuning (GODEBUG/GOGC)
+
+Attempted tuning Go's runtime behavior:
+```dockerfile
+ENV GODEBUG=asyncpreemptoff=1
+ENV GOGC=50
+```
+
+**Result:** Not validated as helpful. `GODEBUG=asyncpreemptoff=1` disables async preemption (intended to prevent epoll event loss), and `GOGC=50` increases GC frequency (intended to reduce race condition window). Both were speculative additions during debugging. Since the glibc fix resolved the issue independently, these were unfalsifiable — removed to keep the container simple.
 
 ## The Actual Fix
 
-**Use Debian Bookworm (glibc) instead of Alpine (musl).**
-
-That's it. No TCP tuning, no LD_PRELOAD, no special capabilities needed.
+**Primary: Use Debian Bookworm (glibc) instead of Alpine (musl).**
 
 | Container | Base | libc | Result |
 |-----------|------|------|--------|
 | FancyBits official | Alpine | musl | Fails on Shield |
 | This container | Debian Bookworm | glibc | Works on Shield |
+
+**Secondary: Opt-in `tcp_retries2` hardening.**
+
+For additional TCP timeout protection, the container supports reducing `net.ipv4.tcp_retries2` via sysctl. This kernel-level parameter controls the max number of TCP retransmission attempts. Unlike keepalive settings, **Go cannot override `tcp_retries2`** because there is no per-socket `setsockopt()` for it — it's kernel-only.
+
+- Default: `tcp_retries2=15` (~15 minute timeout for dead connections)
+- Tuned: `tcp_retries2=8` (~51 second timeout)
+- Enabled via `TCP_TUNING=1` environment variable
+- Requires `CAP_NET_ADMIN` (or `--privileged`)
+- With `--net=host`, this affects the host system
 
 ## Container Architecture
 
@@ -86,12 +106,17 @@ docker exec channels-dvr ss -tno | grep 8089
 
 Expected output shows ESTABLISHED connections with active keepalive timers.
 
+Check TCP tuning:
+```bash
+docker exec channels-dvr sysctl net.ipv4.tcp_retries2
+```
+
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `Dockerfile` | Simple Debian-based container, no TCP hacks |
-| `entrypoint.sh` | User setup and application launch |
+| `Dockerfile` | Debian-based container with opt-in TCP hardening |
+| `entrypoint.sh` | User setup, TCP tuning, and application launch |
 | `unraid-template.xml` | Unraid Community Applications template |
 | `.github/workflows/docker-build.yml` | Monthly rebuilds and manual triggers |
 | `.github/workflows/auto-commit.yml` | Weekly ping to keep repo active (uses [skip ci]) |
@@ -101,7 +126,9 @@ Expected output shows ESTABLISHED connections with active keepalive timers.
 ## Lessons Learned
 
 1. **Don't overcomplicate it** - The fix was using the right base image, not adding TCP tuning hacks
-2. **LD_PRELOAD is dangerous** - Intercepting all socket calls has unpredictable side effects
+2. **LD_PRELOAD doesn't work with Go** - Go bypasses libc entirely for socket operations, using raw syscalls via assembly. LD_PRELOAD can only intercept libc wrappers, not kernel syscalls
 3. **musl vs glibc matters** - Go applications can behave differently on different libc implementations
 4. **NVIDIA Shield is picky** - It's more sensitive to TCP connection handling than other streaming clients
 5. **Test the simple solution first** - Before adding complexity, try the minimal approach
+6. **Distinguish what Go can vs cannot override** - Go overrides keepalive settings (per-socket setsockopt) but cannot override `tcp_retries2` (kernel-only sysctl). Target the knobs Go can't touch
+7. **Avoid unfalsifiable fixes** - Once the real fix works, remove speculative tuning that can't be independently validated
