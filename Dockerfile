@@ -42,7 +42,7 @@ ENV TZ=America/New_York
 # TCP timeout hardening (opt-in, requires --privileged)
 # Set TCP_TUNING=1 to enable tcp_retries2 sysctl + eBPF TCP_USER_TIMEOUT
 ENV TCP_TUNING=0
-ENV TCP_RETRIES2=8
+ENV TCP_RETRIES2=5
 # TCP_USER_TIMEOUT in milliseconds (set via eBPF on every socket)
 # 60s = aggressive cleanup of dead connections (Windows is ~93-189s)
 ENV TCP_USER_TIMEOUT_MS=60000
