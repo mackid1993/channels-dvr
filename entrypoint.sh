@@ -3,7 +3,7 @@ set -e
 
 # =============================================================================
 # Channels DVR Entrypoint Script
-# Handles PUID/PGID user mapping and first-run setup
+# Handles PUID/PGID user mapping, TCP hardening, eBPF, and first-run setup
 # =============================================================================
 
 PUID=${PUID:-99}
@@ -60,14 +60,21 @@ if command -v nvidia-smi &> /dev/null; then
     echo "NVIDIA GPU detected"
 fi
 
-# TCP timeout hardening (opt-in)
-# Reduces tcp_retries2 to clean up dead connections faster (~51sec vs ~15min)
-# Note: With --net=host this affects the host. Requires --privileged for /proc/sys write access.
+# =============================================================================
+# TCP Hardening (opt-in via TCP_TUNING=1, requires --privileged)
+# =============================================================================
 SYSCTL_MODIFIED=false
 ORIGINAL_TCP_RETRIES2=15
+EBPF_LOADED=false
+EBPF_CGROUP=""
+
 if [ "${TCP_TUNING:-0}" = "1" ]; then
+    echo "TCP tuning enabled"
+
+    # --- Layer 1: tcp_retries2 sysctl (system-wide) ---
+    # Reduces dead connection timeout from ~15min to ~51sec
+    # Note: With --net=host this affects the host
     ORIGINAL_TCP_RETRIES2=$(sysctl -n net.ipv4.tcp_retries2 2>/dev/null || echo "15")
-    echo "TCP tuning enabled (tcp_retries2=${TCP_RETRIES2:-8})"
     if sysctl -w net.ipv4.tcp_retries2="${TCP_RETRIES2:-8}" > /dev/null 2>&1; then
         SYSCTL_MODIFIED=true
         echo "  tcp_retries2 set to ${TCP_RETRIES2:-8} (was $ORIGINAL_TCP_RETRIES2)"
@@ -76,6 +83,77 @@ if [ "${TCP_TUNING:-0}" = "1" ]; then
         echo "  Option 1: Run container with --privileged"
         echo "  Option 2: Set on host: sysctl -w net.ipv4.tcp_retries2=${TCP_RETRIES2:-8}"
     fi
+
+    # --- Layer 2: eBPF TCP_USER_TIMEOUT (per-socket, container-scoped) ---
+    # Sets TCP_USER_TIMEOUT on every TCP socket via BPF sock_ops.
+    # This tells the kernel to abort connections with no ACK within N ms.
+    # Scoped to the container's cgroup — does NOT affect host processes.
+    if [ -f /opt/bpf/tcp_user_timeout.o ] && command -v bpftool > /dev/null 2>&1; then
+        echo "  Loading eBPF TCP_USER_TIMEOUT..."
+
+        # Mount bpffs if not already mounted
+        if ! mountpoint -q /sys/fs/bpf 2>/dev/null; then
+            mount -t bpf bpf /sys/fs/bpf 2>/dev/null || true
+        fi
+
+        # Load the BPF program and pin it
+        if bpftool prog load /opt/bpf/tcp_user_timeout.o /sys/fs/bpf/tcp_user_timeout 2>/dev/null; then
+            # Determine container's cgroup path for attachment
+            CGROUP_PATH=""
+            if [ -f /proc/1/cgroup ]; then
+                CGROUP_V2_REL=$(awk -F: '/^0::/{print $3}' /proc/1/cgroup 2>/dev/null)
+                if [ -n "$CGROUP_V2_REL" ] && [ -d "/sys/fs/cgroup${CGROUP_V2_REL}" ]; then
+                    CGROUP_PATH="/sys/fs/cgroup${CGROUP_V2_REL}"
+                fi
+            fi
+            # Fallback paths
+            if [ -z "$CGROUP_PATH" ] || [ ! -d "$CGROUP_PATH" ]; then
+                for path in /sys/fs/cgroup/unified /sys/fs/cgroup; do
+                    if [ -d "$path" ]; then
+                        CGROUP_PATH="$path"
+                        break
+                    fi
+                done
+            fi
+
+            if [ -n "$CGROUP_PATH" ] && bpftool cgroup attach "$CGROUP_PATH" sock_ops pinned /sys/fs/bpf/tcp_user_timeout 2>/dev/null; then
+                EBPF_LOADED=true
+                EBPF_CGROUP="$CGROUP_PATH"
+
+                # Update timeout map value from env var
+                TIMEOUT_MS=${TCP_USER_TIMEOUT_MS:-60000}
+                MAP_ID=$(bpftool prog show pinned /sys/fs/bpf/tcp_user_timeout 2>/dev/null | grep map_ids | awk '{print $2}' | tr -d ',')
+                if [ -n "$MAP_ID" ]; then
+                    # Convert to 4 little-endian hex bytes for bpftool
+                    b0=$(printf '0x%02x' $((TIMEOUT_MS & 0xff)))
+                    b1=$(printf '0x%02x' $(((TIMEOUT_MS >> 8) & 0xff)))
+                    b2=$(printf '0x%02x' $(((TIMEOUT_MS >> 16) & 0xff)))
+                    b3=$(printf '0x%02x' $(((TIMEOUT_MS >> 24) & 0xff)))
+                    bpftool map update id "$MAP_ID" key 0x00 0x00 0x00 0x00 value $b0 $b1 $b2 $b3 2>/dev/null || true
+                fi
+
+                echo "  TCP_USER_TIMEOUT=${TIMEOUT_MS}ms attached to $CGROUP_PATH"
+            else
+                echo "  WARNING: Could not attach eBPF to cgroup"
+                rm -f /sys/fs/bpf/tcp_user_timeout
+            fi
+        else
+            echo "  WARNING: Could not load eBPF program (kernel may not support BPF sock_ops)"
+        fi
+
+        if [ "$EBPF_LOADED" = "false" ]; then
+            echo "  eBPF unavailable — tcp_retries2 sysctl is still active"
+        fi
+    fi
+
+    # --- Layer 3: Additional TCP sysctls for streaming ---
+    # These are best-effort; failures are silently ignored
+    # Don't reset congestion window after idle periods (streaming has gaps)
+    sysctl -w net.ipv4.tcp_slow_start_after_idle=0 > /dev/null 2>&1 || true
+    # Don't cache TCP metrics from previous connections (prevents bad RTT estimates)
+    sysctl -w net.ipv4.tcp_no_metrics_save=1 > /dev/null 2>&1 || true
+    # Enable MTU probing (helps with PMTUD black holes on some networks)
+    sysctl -w net.ipv4.tcp_mtu_probing=1 > /dev/null 2>&1 || true
 fi
 
 # Build DVR arguments (matching official FancyBits run.sh)
@@ -95,8 +173,15 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 # Disable set -e for signal handling (wait returns non-zero on signal)
 set +e
 
-# Clean up TCP tuning on shutdown, then forward signal to DVR
+# Clean up on shutdown: eBPF detach, sysctl restore, forward signal to DVR
 cleanup() {
+    # Detach and remove eBPF program
+    if [ "$EBPF_LOADED" = "true" ]; then
+        echo "Detaching eBPF TCP_USER_TIMEOUT..."
+        bpftool cgroup detach "$EBPF_CGROUP" sock_ops pinned /sys/fs/bpf/tcp_user_timeout 2>/dev/null || true
+        rm -f /sys/fs/bpf/tcp_user_timeout
+    fi
+    # Restore tcp_retries2
     if [ "$SYSCTL_MODIFIED" = "true" ]; then
         echo "Restoring tcp_retries2 to $ORIGINAL_TCP_RETRIES2..."
         sysctl -w net.ipv4.tcp_retries2="$ORIGINAL_TCP_RETRIES2" || true

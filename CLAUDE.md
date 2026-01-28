@@ -11,9 +11,16 @@ Channels DVR streaming worked perfectly on Windows but had severe issues on Linu
 
 ## Root Cause
 
-**Dead TCP connections linger for ~15 minutes with the default kernel setting (`tcp_retries2=15`).** NVIDIA Shield TV is particularly sensitive to stale connections — they pile up and streams die.
+Two issues compound to cause Shield TV streaming failures on Linux:
 
-The fix is reducing `tcp_retries2` to 8, which cleans up dead connections in ~51 seconds instead of ~15 minutes. This is a kernel-level sysctl parameter that **Go cannot override** — there is no per-socket `setsockopt()` for it, making it the only effective TCP tuning for Go applications.
+1. **Dead TCP connections linger for ~15 minutes** with the default kernel setting (`tcp_retries2=15`). Shield TV is particularly sensitive to stale connections — they pile up and streams die.
+
+2. **Go does not set `TCP_USER_TIMEOUT`** on its sockets. Windows has `TcpMaxDataRetransmissions=5` (~93-189s timeout), but Linux Go applications rely solely on `tcp_retries2` for retransmission control. Without `TCP_USER_TIMEOUT`, busy (streaming) connections can stall for extended periods before the kernel aborts them.
+
+The fix is a three-layer approach:
+- `tcp_retries2=8` (sysctl) — Reduces dead connection timeout from ~15 min to ~51 sec
+- `TCP_USER_TIMEOUT=60000ms` (eBPF) — Per-socket timeout that aborts connections with no ACK within 60 seconds
+- Additional streaming-optimized sysctls
 
 The container also uses **Debian Bookworm** (glibc) instead of Alpine (musl) for broader TCP socket compatibility.
 
@@ -69,7 +76,7 @@ exec gosu channels "$@" > /dev/null 2>&1
 
 ## The Actual Fix
 
-### Primary: TCP hardening via `tcp_retries2`
+### Layer 1: tcp_retries2 sysctl (system-wide)
 
 | Setting | Value | Timeout |
 |---------|-------|---------|
@@ -83,7 +90,32 @@ exec gosu channels "$@" > /dev/null 2>&1
 - Original value is saved and **restored on container shutdown** via SIGTERM/SIGINT trap
 - Go cannot override `tcp_retries2` because there is no per-socket `setsockopt()` for it — it's kernel-only
 
-### Secondary: Debian Bookworm (glibc)
+### Layer 2: eBPF TCP_USER_TIMEOUT (per-socket, container-scoped)
+
+`TCP_USER_TIMEOUT` tells the kernel: "if transmitted data is not acknowledged within N milliseconds, abort the connection." Go does **not** set this option. Since Go bypasses libc (raw syscalls via assembly), `LD_PRELOAD` cannot inject it either.
+
+**Solution: eBPF sock_ops.** An eBPF `BPF_PROG_TYPE_SOCK_OPS` program is compiled at Docker build time and loaded at runtime. It hooks into TCP connection establishment (`ACTIVE_ESTABLISHED_CB` and `PASSIVE_ESTABLISHED_CB`) and calls `bpf_setsockopt()` to set `TCP_USER_TIMEOUT` on every socket.
+
+- **Compiled at build time** via multi-stage Dockerfile (clang/llvm in builder, only `.o` file in final image)
+- **Loaded at runtime** via `bpftool prog load` + `bpftool cgroup attach`
+- **Cgroup-scoped** — attached to the container's cgroup, only affects processes inside the container (not host processes)
+- **Configurable** via `TCP_USER_TIMEOUT_MS` env var (default 60000ms = 60s), set through a BPF array map updated with `bpftool map update`
+- **Graceful fallback** — if kernel doesn't support BPF sock_ops (< 5.3 or no `CONFIG_CGROUP_BPF`), falls back to tcp_retries2 only
+- **Cleaned up on shutdown** — eBPF program detached from cgroup and unpinned before tcp_retries2 restore
+- Requires `--privileged` and kernel >= 5.3 with `CONFIG_CGROUP_BPF` (Unraid 6.10+)
+
+**Why this works when LD_PRELOAD doesn't:** eBPF hooks at the kernel level, not the libc level. It fires on every `accept()` and `connect()` syscall regardless of whether the application uses libc or raw syscalls.
+
+**Windows comparison:** Windows defaults to `TcpMaxDataRetransmissions=5` with ~3s initial RTO, giving ~93-189s timeout. Our `TCP_USER_TIMEOUT=60000ms` (60s) is more aggressive, matching the behavior that makes Windows streaming stable.
+
+### Layer 3: Additional TCP sysctls
+
+When `TCP_TUNING=1`, the container also sets:
+- `tcp_slow_start_after_idle=0` — Don't reset congestion window after idle (streaming has natural gaps)
+- `tcp_no_metrics_save=1` — Don't cache TCP metrics from previous connections (prevents inheriting bad RTT estimates)
+- `tcp_mtu_probing=1` — Enable MTU probing (helps with PMTUD black holes on some networks)
+
+### Debian Bookworm (glibc)
 
 Using Debian Bookworm (glibc) instead of Alpine (musl) provides broader TCP socket compatibility. Go applications can behave differently on musl vs glibc when managing TCP sockets.
 
@@ -144,10 +176,10 @@ The entrypoint uses **background+wait** instead of `exec` so that bash stays ali
 
 1. DVR runs in background via `gosu channels ../latest/channels-dvr $DVR_ARGS &`
 2. `trap cleanup SIGTERM SIGINT` catches shutdown signals
-3. Cleanup function restores original `tcp_retries2` value, then forwards SIGTERM to DVR
+3. Cleanup function: detaches eBPF program → restores original `tcp_retries2` → forwards SIGTERM to DVR
 4. `set +e` before the trap/wait section — `set -e` would kill bash when `wait` is interrupted by a signal (exit code 143)
 
-**Why not `exec`:** `exec` replaces bash with the DVR process. Signal traps are lost because bash no longer exists. The sysctl cleanup would never run.
+**Why not `exec`:** `exec` replaces bash with the DVR process. Signal traps are lost because bash no longer exists. The sysctl/eBPF cleanup would never run.
 
 ### Binary Path
 
@@ -165,6 +197,18 @@ Check TCP tuning:
 docker exec channels-dvr sysctl net.ipv4.tcp_retries2
 ```
 
+Check eBPF program:
+```bash
+# Verify BPF program is loaded and pinned
+docker exec channels-dvr bpftool prog show pinned /sys/fs/bpf/tcp_user_timeout
+
+# Verify cgroup attachment
+docker exec channels-dvr bpftool cgroup show /sys/fs/cgroup/
+
+# Check TCP_USER_TIMEOUT on live sockets (look for "timeout:" in output)
+docker exec channels-dvr ss -tino | grep 8089
+```
+
 Check conntrack:
 ```bash
 cat /proc/net/nf_conntrack | grep 8089
@@ -174,8 +218,9 @@ cat /proc/net/nf_conntrack | grep 8089
 
 | File | Purpose |
 |------|---------|
-| `Dockerfile` | Debian-based container with data directory and build-time setup |
-| `entrypoint.sh` | User setup, TCP tuning with cleanup, umask, DVR launch with -dir flag |
+| `Dockerfile` | Multi-stage build: BPF compilation + Debian-based container |
+| `bpf/tcp_user_timeout.bpf.c` | eBPF sock_ops program that sets TCP_USER_TIMEOUT on all sockets |
+| `entrypoint.sh` | User setup, TCP tuning (sysctl + eBPF), umask, DVR launch with -dir flag |
 | `unraid-template.xml` | Unraid Community Applications template |
 | `.github/workflows/docker-build.yml` | Monthly rebuild (1st at midnight ET) and manual triggers |
 | `.github/workflows/auto-commit.yml` | Weekly ping Monday midnight UTC (uses [skip ci]) |
@@ -184,14 +229,18 @@ cat /proc/net/nf_conntrack | grep 8089
 
 ## Lessons Learned
 
-1. **`tcp_retries2` is the fix** — The kernel parameter that controls dead connection timeout. Go cannot override it (no per-socket setsockopt). Default 15 = ~15 min. Value 8 = ~51 sec.
-2. **LD_PRELOAD doesn't work with Go** — Go bypasses libc entirely for socket operations, using raw syscalls via assembly. LD_PRELOAD can only intercept libc wrappers, not kernel syscalls.
-3. **Docker /proc/sys is read-only** — Docker mounts `/proc/sys` as read-only in ALL non-privileged containers. `--cap-add=NET_ADMIN` grants the capability but the read-only filesystem blocks the write. Only `--privileged` removes this restriction.
-4. **`exec` prevents signal traps** — `exec` replaces bash, so traps never fire. Use background+wait to keep bash alive for cleanup.
-5. **`set -e` breaks signal handling** — When `wait` is interrupted by SIGTERM, it returns exit code 143 (128+15). `set -e` would exit bash before the trap handler completes. Use `set +e` before the wait section.
-6. **`-dir` flag required for logs page** — The DVR binary needs `-dir /channels-dvr/data` to know where to write `channels-dvr.log`. Without it, the web UI logs page (`/admin/log`) has nothing to read. Discovered by examining the official FancyBits `run.sh`.
-7. **`umask 0000` for Unraid SMB** — The DVR creates files with restrictive permissions. Without `umask 0000`, Windows can't delete recordings via SMB. Official FancyBits container has this bug; timstephens24 container fixes it.
-8. **NVIDIA Shield is picky** — More sensitive to TCP connection handling than other streaming clients.
-9. **Run setup.sh from `/`** — The setup script creates `channels-dvr/latest/channels-dvr` relative to cwd. Running from `/channels-dvr` creates a nested path. Running from `/` puts the binary at `/channels-dvr/latest/channels-dvr`.
-10. **Distinguish what Go can vs cannot override** — Go overrides keepalive settings (per-socket setsockopt) but cannot override `tcp_retries2` (kernel-only sysctl). Target the knobs Go can't touch.
-11. **Avoid unfalsifiable fixes** — Remove speculative tuning that can't be independently validated (GODEBUG, GOGC, etc.).
+1. **`tcp_retries2` is the system-wide fix** — The kernel parameter that controls dead connection timeout. Go cannot override it (no per-socket setsockopt). Default 15 = ~15 min. Value 8 = ~51 sec.
+2. **`TCP_USER_TIMEOUT` is the per-socket fix** — Go doesn't set it, LD_PRELOAD can't inject it (Go bypasses libc). eBPF sock_ops is the only way to set it on a Go binary without modifying source.
+3. **eBPF hooks at the kernel level** — Unlike LD_PRELOAD (libc interception), eBPF `BPF_PROG_TYPE_SOCK_OPS` fires on every socket operation regardless of how the app creates sockets. This is why it works with Go.
+4. **LD_PRELOAD doesn't work with Go** — Go bypasses libc entirely for socket operations, using raw syscalls via assembly. LD_PRELOAD can only intercept libc wrappers, not kernel syscalls.
+5. **Docker /proc/sys is read-only** — Docker mounts `/proc/sys` as read-only in ALL non-privileged containers. `--cap-add=NET_ADMIN` grants the capability but the read-only filesystem blocks the write. Only `--privileged` removes this restriction.
+6. **`exec` prevents signal traps** — `exec` replaces bash, so traps never fire. Use background+wait to keep bash alive for cleanup.
+7. **`set -e` breaks signal handling** — When `wait` is interrupted by SIGTERM, it returns exit code 143 (128+15). `set -e` would exit bash before the trap handler completes. Use `set +e` before the wait section.
+8. **`-dir` flag required for logs page** — The DVR binary needs `-dir /channels-dvr/data` to know where to write `channels-dvr.log`. Without it, the web UI logs page (`/admin/log`) has nothing to read. Discovered by examining the official FancyBits `run.sh`.
+9. **`umask 0000` for Unraid SMB** — The DVR creates files with restrictive permissions. Without `umask 0000`, Windows can't delete recordings via SMB. Official FancyBits container has this bug; timstephens24 container fixes it.
+10. **NVIDIA Shield is picky** — More sensitive to TCP connection handling than other streaming clients. Wi-Fi Shield TV gets connection resets; Ethernet Shield gets stuck connections.
+11. **Run setup.sh from `/`** — The setup script creates `channels-dvr/latest/channels-dvr` relative to cwd. Running from `/channels-dvr` creates a nested path. Running from `/` puts the binary at `/channels-dvr/latest/channels-dvr`.
+12. **Distinguish what Go can vs cannot override** — Go overrides keepalive settings (per-socket setsockopt) but cannot override `tcp_retries2` (kernel-only sysctl) or set `TCP_USER_TIMEOUT` (it simply doesn't). Target the knobs Go can't or doesn't touch.
+13. **Windows vs Linux TCP defaults** — Windows `TcpMaxDataRetransmissions=5` (~93-189s). Linux `tcp_retries2=15` (~15 min). The gap explains why Windows VM works fine with Shield TV while Linux doesn't.
+14. **Multi-stage Docker builds for BPF** — Compile with clang/llvm in builder stage, ship only the ~1KB `.o` file + bpftool in final image. No build tools bloat.
+15. **Avoid unfalsifiable fixes** — Remove speculative tuning that can't be independently validated (GODEBUG, GOGC, etc.).

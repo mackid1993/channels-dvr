@@ -11,15 +11,19 @@ Channels DVR streams work perfectly on most clients but can suffer from connecti
 
 ### The Fix: TCP Hardening
 
-The kernel parameter `tcp_retries2` controls how long dead TCP connections linger before cleanup. The default value of 15 means ~15 minutes before the kernel gives up on a dead connection. NVIDIA Shield TV is particularly sensitive to this — stale connections pile up and streams die.
+This container applies three layers of TCP hardening:
 
-Setting `tcp_retries2=8` reduces the dead connection timeout to ~51 seconds. This is a kernel-level sysctl parameter that **Go cannot override** (there is no per-socket `setsockopt()` for it), making it the only effective TCP tuning for Go applications.
+1. **`tcp_retries2=8`** (sysctl) — Reduces dead connection timeout from ~15 minutes to ~51 seconds. This is a kernel-level parameter that Go cannot override.
+
+2. **`TCP_USER_TIMEOUT`** (eBPF) — Sets a per-socket timeout on every TCP connection via an eBPF sock_ops program. If no data is acknowledged within 60 seconds, the kernel aborts the connection. This is scoped to the container's cgroup and does not affect host processes. Go doesn't set this option, and LD_PRELOAD can't inject it (Go bypasses libc). eBPF hooks at the kernel level, making it the only way to set per-socket options on a Go binary without modifying its source.
+
+3. **Additional sysctls** — `tcp_slow_start_after_idle=0`, `tcp_no_metrics_save=1`, `tcp_mtu_probing=1` for streaming optimization.
 
 This container also uses **Debian Bookworm** (glibc) instead of Alpine (musl) for broader compatibility.
 
 ## Features
 
-- **TCP hardening** — Kernel-level TCP timeout tuning that fixes Shield TV streaming
+- **TCP hardening** — eBPF TCP_USER_TIMEOUT + sysctl tuning that fixes Shield TV streaming
 - **Debian glibc base** — Broader compatibility vs Alpine/musl
 - **PUID/PGID support** — Proper user mapping for Unraid and other systems
 - **TV Everywhere (TVE)** — Google Chrome for TVE authentication
@@ -118,10 +122,11 @@ services:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `TCP_TUNING` | 0 | Set to `1` to enable TCP timeout hardening. Requires `--privileged` (Docker mounts `/proc/sys` read-only in non-privileged containers). |
+| `TCP_TUNING` | 0 | Set to `1` to enable TCP hardening (sysctl + eBPF + streaming optimizations). Requires `--privileged`. |
 | `TCP_RETRIES2` | 8 | Max TCP retransmission attempts. Default kernel value is 15 (~15 min timeout). Setting to 8 gives ~51 second timeout for dead connections. |
+| `TCP_USER_TIMEOUT_MS` | 60000 | Per-socket timeout in milliseconds, set via eBPF. If no data is ACK'd within this time, the connection is aborted. 60000 = 60 seconds. |
 
-**Note:** With `--net=host`, these settings affect the host system. The container restores the original `tcp_retries2` value on shutdown. As an alternative, set `tcp_retries2` on the host directly (see Host Method above).
+**Note:** `tcp_retries2` affects the host system with `--net=host` (restored on shutdown). `TCP_USER_TIMEOUT` is scoped to the container's cgroup via eBPF and does not affect host processes. The eBPF feature requires kernel >= 5.3 with `CONFIG_CGROUP_BPF` (Unraid 6.10+). If eBPF is unavailable, the container falls back to `tcp_retries2` only.
 
 ### GPU Settings
 
@@ -209,6 +214,14 @@ When a client (Shield TV) stops acknowledging data:
 2. With default `tcp_retries2=15`, this takes ~15 minutes before cleanup
 3. With `tcp_retries2=8`, dead connections are cleaned up in ~51 seconds
 
+### Why eBPF TCP_USER_TIMEOUT
+
+`TCP_USER_TIMEOUT` is a per-socket option that tells the kernel: "abort this connection if transmitted data is not acknowledged within N milliseconds." Go does **not** set this option, and `LD_PRELOAD` cannot inject it (Go bypasses libc via raw syscalls).
+
+This container uses an **eBPF sock_ops program** that hooks into the kernel at TCP connection establishment (`BPF_SOCK_OPS_ACTIVE_ESTABLISHED_CB` / `BPF_SOCK_OPS_PASSIVE_ESTABLISHED_CB`) and calls `bpf_setsockopt()` to set `TCP_USER_TIMEOUT` on every socket. The program is attached to the container's cgroup, so it only affects connections from processes inside the container.
+
+Windows sets `TcpMaxDataRetransmissions=5` by default (~93-189s timeout). Our `TCP_USER_TIMEOUT=60000ms` (60s) provides similar behavior on Linux.
+
 ## Troubleshooting
 
 ### Check Active Connections
@@ -224,6 +237,18 @@ cat /proc/net/nf_conntrack | grep 8089
 ### Verify TCP Tuning is Active
 ```bash
 docker exec channels-dvr sysctl net.ipv4.tcp_retries2
+```
+
+### Verify eBPF TCP_USER_TIMEOUT
+```bash
+# Check BPF program is loaded
+docker exec channels-dvr bpftool prog show pinned /sys/fs/bpf/tcp_user_timeout
+
+# Check cgroup attachment
+docker exec channels-dvr bpftool cgroup show /sys/fs/cgroup/
+
+# Verify timeout on live sockets (look for "timeout:" in output)
+docker exec channels-dvr ss -tino | grep 8089
 ```
 
 ## Building Locally
