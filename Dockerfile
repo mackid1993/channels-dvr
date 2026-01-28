@@ -69,4 +69,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 VOLUME ["/channels-dvr", "/shares/DVR"]
 
 ENTRYPOINT ["/usr/bin/tini", "--", "/entrypoint.sh"]
-CMD ["/channels-dvr/channels-dvr/latest/channels-dvr"]
+CMD ["/channels-dvr/latest/channels-dvr"]

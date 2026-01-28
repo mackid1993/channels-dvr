@@ -34,9 +34,9 @@ chown -R channels:channels /channels-dvr
 chown channels:channels /shares/DVR 2>/dev/null || true
 
 # Download Channels DVR if not present (first run only)
-if [ ! -f /channels-dvr/channels-dvr/latest/channels-dvr ]; then
+if [ ! -f /channels-dvr/latest/channels-dvr ]; then
     echo "Channels DVR not found, downloading..."
-    cd /channels-dvr
+    cd /
     gosu channels curl -f -s https://getchannels.com/dvr/setup.sh | DOWNLOAD_ONLY=1 gosu channels sh
     echo "Download complete!"
 else
@@ -44,7 +44,7 @@ else
 fi
 
 # Verify binary exists
-if [ ! -f /channels-dvr/channels-dvr/latest/channels-dvr ]; then
+if [ ! -f /channels-dvr/latest/channels-dvr ]; then
     echo "FATAL: Channels DVR binary not found!"
     exit 1
 fi
