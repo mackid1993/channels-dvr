@@ -79,5 +79,7 @@ echo "  Web UI: http://localhost:8089"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # Run the command as the channels user
+# Redirect stdout/stderr to /dev/null so the DVR uses its own internal log files.
+# Without this, output goes to Docker logs and the DVR's web log viewer breaks.
 cd /channels-dvr
-exec gosu channels "$@"
+exec gosu channels "$@" > /dev/null 2>&1
