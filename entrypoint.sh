@@ -61,14 +61,15 @@ fi
 
 # TCP timeout hardening (opt-in)
 # Reduces tcp_retries2 to clean up dead connections faster (~51sec vs ~15min)
-# Note: With --net=host this affects the host. Requires CAP_NET_ADMIN.
+# Note: With --net=host this affects the host. Requires --privileged for /proc/sys write access.
 if [ "${TCP_TUNING:-0}" = "1" ]; then
     echo "TCP tuning enabled (tcp_retries2=${TCP_RETRIES2:-8})"
     if sysctl -w net.ipv4.tcp_retries2="${TCP_RETRIES2:-8}" > /dev/null 2>&1; then
         echo "  tcp_retries2 set to ${TCP_RETRIES2:-8}"
     else
-        echo "  WARNING: Could not set tcp_retries2."
-        echo "  Add --cap-add=NET_ADMIN or set on host: sysctl -w net.ipv4.tcp_retries2=8"
+        echo "  WARNING: Could not set tcp_retries2. /proc/sys is read-only."
+        echo "  Option 1: Run container with --privileged"
+        echo "  Option 2: Set on host: sysctl -w net.ipv4.tcp_retries2=${TCP_RETRIES2:-8}"
     fi
 fi
 

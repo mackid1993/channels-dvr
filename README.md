@@ -66,9 +66,9 @@ services:
       - /dev/dri:/dev/dri
 ```
 
-### With TCP Hardening
+### With TCP Hardening (Container Method)
 
-If you experience dead/stuck connections, enable TCP timeout tuning:
+If you experience dead/stuck connections, enable TCP timeout tuning. This requires `privileged: true` because Docker mounts `/proc/sys` as read-only in non-privileged containers — `cap_add: [NET_ADMIN]` alone is not sufficient.
 
 ```yaml
 version: "3.8"
@@ -77,9 +77,8 @@ services:
     image: ghcr.io/mackid1993/channels-dvr:latest
     container_name: channels-dvr
     network_mode: host
+    privileged: true
     restart: unless-stopped
-    cap_add:
-      - NET_ADMIN
     environment:
       - PUID=99
       - PGID=100
@@ -91,6 +90,24 @@ services:
     devices:
       - /dev/dri:/dev/dri
 ```
+
+### With TCP Hardening (Host Method — No Privileged Mode)
+
+If you prefer not to run the container in privileged mode, set `tcp_retries2` directly on the host. Since `--net=host` shares the host's network namespace, the container inherits the setting automatically.
+
+```bash
+# Run once (takes effect immediately):
+sysctl -w net.ipv4.tcp_retries2=8
+
+# Make persistent across reboots:
+# Linux: Add to /etc/sysctl.d/99-channels-dvr.conf
+echo "net.ipv4.tcp_retries2 = 8" > /etc/sysctl.d/99-channels-dvr.conf
+
+# Unraid: Add to /boot/config/go (runs at boot)
+echo 'sysctl -w net.ipv4.tcp_retries2=8' >> /boot/config/go
+```
+
+No container changes needed — just use the basic Docker Compose example above.
 
 ## Environment Variables
 
@@ -108,15 +125,10 @@ These settings reduce the time it takes to clean up dead TCP connections. Useful
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `TCP_TUNING` | 0 | Set to `1` to enable TCP timeout hardening. Requires `--cap-add=NET_ADMIN`. |
+| `TCP_TUNING` | 0 | Set to `1` to enable TCP timeout hardening. Requires `--privileged` (Docker mounts `/proc/sys` read-only in non-privileged containers). |
 | `TCP_RETRIES2` | 8 | Max TCP retransmission attempts. Default kernel value is 15 (~15 min timeout). Setting to 8 gives ~51 second timeout for dead connections. |
 
-**Note:** With `--net=host`, these settings affect the host system. This is generally acceptable for a dedicated media server. If you prefer not to modify host settings, you can set `tcp_retries2` directly on the host instead:
-
-```bash
-# On the host (e.g., in Unraid's /boot/config/go):
-sysctl -w net.ipv4.tcp_retries2=8
-```
+**Note:** With `--net=host`, these settings affect the host system. This is acceptable for a dedicated media server. As an alternative, you can set `tcp_retries2` on the host directly (see Host Method above) and skip `TCP_TUNING` entirely.
 
 ### GPU Settings
 
