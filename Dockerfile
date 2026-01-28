@@ -1,29 +1,10 @@
 # Channels DVR Docker Container (amd64 only)
 # Features:
 #   - Proper PUID/PGID user mapping (no root-owned files)
-#   - eBPF TCP_USER_TIMEOUT for stable streaming (especially Shield TV)
 #   - Intel QuickSync support
 #   - NVIDIA GPU support (via nvidia-container-toolkit)
 #   - TVE (TV Everywhere) with Google Chrome
 
-# =============================================================================
-# Stage 1: Compile eBPF program for TCP_USER_TIMEOUT
-# =============================================================================
-FROM debian:bookworm-slim AS bpf-builder
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    clang llvm libbpf-dev linux-libc-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY bpf/tcp_user_timeout.bpf.c /bpf/
-RUN clang -O2 -g -target bpf \
-    -I/usr/include/x86_64-linux-gnu \
-    -c /bpf/tcp_user_timeout.bpf.c \
-    -o /bpf/tcp_user_timeout.o
-
-# =============================================================================
-# Stage 2: Final image
-# =============================================================================
 FROM debian:bookworm-slim
 
 ARG BUILD_DATE
@@ -39,20 +20,13 @@ LABEL org.opencontainers.image.created="${BUILD_DATE}"
 ENV PUID=99
 ENV PGID=100
 ENV TZ=America/New_York
-# TCP timeout hardening (opt-in, requires --privileged)
-# Set TCP_TUNING=1 to enable tcp_retries2 sysctl + eBPF TCP_USER_TIMEOUT
-ENV TCP_TUNING=0
-ENV TCP_RETRIES2=5
-# TCP_USER_TIMEOUT in milliseconds (set via eBPF on every socket)
-# 60s = aggressive cleanup of dead connections (Windows is ~93-189s)
-ENV TCP_USER_TIMEOUT_MS=60000
 # NVIDIA GPU support (requires --runtime=nvidia or --gpus all)
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
 
-# Install tini and core dependencies (+ bpftool for eBPF loading)
+# Install tini and core dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    tini curl ca-certificates wget gnupg xvfb ffmpeg iproute2 gosu bpftool \
+    tini curl ca-certificates wget gnupg xvfb ffmpeg iproute2 gosu \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Google Chrome for TVE
@@ -76,10 +50,7 @@ RUN wget -qO - https://repositories.intel.com/gpu/intel-graphics.key | \
     rm -rf /var/lib/apt/lists/*
 
 # Create directories
-RUN mkdir -p /channels-dvr/data /shares/DVR /opt/bpf
-
-# Copy compiled eBPF program from builder stage
-COPY --from=bpf-builder /bpf/tcp_user_timeout.o /opt/bpf/tcp_user_timeout.o
+RUN mkdir -p /channels-dvr/data /shares/DVR
 
 # Copy entrypoint script
 COPY entrypoint.sh /entrypoint.sh
