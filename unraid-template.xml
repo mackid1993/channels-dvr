@@ -14,18 +14,10 @@
 Based on Debian Bookworm with minimal tini init system.&#xD;
 &#xD;
 Key Features:&#xD;
-  <Overview>Channels DVR Server with TCP hardening for stable NVIDIA Shield streaming.&#xD;
-&#xD;
-Based on Debian Bookworm with TCP hardening (sysctl + eBPF TCP_USER_TIMEOUT)&#xD;
-that fixes Shield TV streaming issues. Uses minimal tini init system.&#xD;
-&#xD;
-Key Features:&#xD;
-- Stable streaming to NVIDIA Shield TV (TCP hardening + eBPF)&#xD;
 - Proper PUID/PGID mapping (no root-owned files)&#xD;
 - TV Everywhere (TVE) support with Google Chrome&#xD;
 - Intel QuickSync hardware transcoding (pass /dev/dri)&#xD;
 - NVIDIA GPU support (set NVIDIA_VISIBLE_DEVICES=all in Advanced settings)&#xD;
-- TCP timeout hardening with eBPF TCP_USER_TIMEOUT (requires Privileged mode)&#xD;
 - App handles its own updates (including pre-releases)</Overview>
   <Category>MediaServer:Video</Category>
   <WebUI>http://[IP]:8089</WebUI>
@@ -44,9 +36,6 @@ Key Features:&#xD;
   <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Group ID - Use 100 for users on Unraid" Type="Variable" Display="always" Required="false" Mask="false">100</Config>
   <Config Name="Timezone" Target="TZ" Default="America/New_York" Mode="" Description="Timezone" Type="Variable" Display="always" Required="false" Mask="false">America/New_York</Config>
   <Config Name="Intel GPU" Target="/dev/dri" Default="/dev/dri" Mode="" Description="Intel GPU for hardware transcoding" Type="Device" Display="always" Required="false" Mask="false">/dev/dri</Config>
-  <Config Name="TCP Tuning" Target="TCP_TUNING" Default="0" Mode="" Description="Set to 1 to enable TCP hardening (sysctl tcp_retries2 + eBPF TCP_USER_TIMEOUT + streaming optimizations). Requires Privileged mode." Type="Variable" Display="advanced" Required="false" Mask="false">0</Config>
-  <Config Name="TCP Retries" Target="TCP_RETRIES2" Default="8" Mode="" Description="Max TCP retransmission attempts. Default kernel value is 15 (~15min timeout). Value of 8 gives ~51sec timeout. Only applies when TCP_TUNING=1." Type="Variable" Display="advanced" Required="false" Mask="false">8</Config>
-  <Config Name="TCP User Timeout (ms)" Target="TCP_USER_TIMEOUT_MS" Default="60000" Mode="" Description="Per-socket TCP_USER_TIMEOUT in milliseconds, set via eBPF on every connection. If no data is ACK'd within this time, the connection is aborted. Default 60000 = 60 seconds. Requires kernel 5.3+ and Privileged mode. Only applies when TCP_TUNING=1." Type="Variable" Display="advanced" Required="false" Mask="false">60000</Config>
   <Config Name="NVIDIA Visible Devices" Target="NVIDIA_VISIBLE_DEVICES" Default="" Mode="" Description="NVIDIA GPUs to use. Set to 'all' for all GPUs, or specific GPU ID like '0'. Leave empty to disable NVIDIA. Requires Unraid NVIDIA plugin." Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
   <Config Name="NVIDIA Driver Capabilities" Target="NVIDIA_DRIVER_CAPABILITIES" Default="compute,video,utility" Mode="" Description="NVIDIA capabilities: compute, video, utility, graphics. Default handles transcoding." Type="Variable" Display="advanced" Required="false" Mask="false">compute,video,utility</Config>
-  </Container>
+</Container>
