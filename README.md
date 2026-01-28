@@ -1,6 +1,6 @@
 # Channels DVR Docker Container
 
-A Debian-based Docker container for [Channels DVR](https://getchannels.com/) with TCP hardening that fixes NVIDIA Shield TV streaming issues, plus hardware transcoding support.
+An unoffical Debian-based Docker container for [Channels DVR](https://getchannels.com/) with TCP hardening that fixes NVIDIA Shield TV streaming issues, plus hardware transcoding support.
 
 ## Why This Exists
 
