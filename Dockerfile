@@ -21,10 +21,10 @@ ENV PUID=99
 ENV PGID=100
 ENV TZ=America/New_York
 # TCP timeout hardening (opt-in, requires --privileged for sysctl access)
-# Set TCP_TUNING=1 to reduce dead connection timeout from ~15min to ~51sec
+# Set TCP_TUNING=1 to reduce dead connection timeout from ~15min to ~6sec
 # Alternatively, set tcp_retries2 on the host directly (see README)
 ENV TCP_TUNING=0
-ENV TCP_RETRIES2=8
+ENV TCP_RETRIES2=5
 # NVIDIA GPU support (requires --runtime=nvidia or --gpus all)
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,video,utility

@@ -13,7 +13,7 @@ Channels DVR streams work perfectly on most clients but can suffer from connecti
 
 The kernel parameter `tcp_retries2` controls how long dead TCP connections linger before cleanup. The default value of 15 means ~15 minutes before the kernel gives up on a dead connection. NVIDIA Shield TV is particularly sensitive to this — stale connections pile up and streams die.
 
-Setting `tcp_retries2=8` reduces the dead connection timeout to ~51 seconds. This is a kernel-level sysctl parameter that **Go cannot override** (there is no per-socket `setsockopt()` for it), making it the only effective TCP tuning for Go applications.
+Setting `tcp_retries2=5` reduces the dead connection timeout to ~6 seconds (matching Windows' `TcpMaxDataRetransmissions=5`). This is a kernel-level sysctl parameter that **Go cannot override** (there is no per-socket `setsockopt()` for it), making it the only effective TCP tuning for Go applications.
 
 This container also uses **Debian Bookworm** (glibc) instead of Alpine (musl) for broader compatibility.
 
@@ -73,14 +73,14 @@ If you prefer not to run the container in privileged mode, set `tcp_retries2` di
 
 ```bash
 # Run once (takes effect immediately):
-sysctl -w net.ipv4.tcp_retries2=8
+sysctl -w net.ipv4.tcp_retries2=5
 
 # Make persistent across reboots:
 # Linux: Add to /etc/sysctl.d/99-channels-dvr.conf
-echo "net.ipv4.tcp_retries2 = 8" > /etc/sysctl.d/99-channels-dvr.conf
+echo "net.ipv4.tcp_retries2 = 5" > /etc/sysctl.d/99-channels-dvr.conf
 
 # Unraid: Add to /boot/config/go (runs at boot)
-echo 'sysctl -w net.ipv4.tcp_retries2=8' >> /boot/config/go
+echo 'sysctl -w net.ipv4.tcp_retries2=5' >> /boot/config/go
 ```
 
 Then use Docker Compose without `privileged` or `TCP_TUNING`:
@@ -119,7 +119,7 @@ services:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `TCP_TUNING` | 0 | Set to `1` to enable TCP timeout hardening. Requires `--privileged` (Docker mounts `/proc/sys` read-only in non-privileged containers). |
-| `TCP_RETRIES2` | 8 | Max TCP retransmission attempts. Default kernel value is 15 (~15 min timeout). Setting to 8 gives ~51 second timeout for dead connections. |
+| `TCP_RETRIES2` | 5 | Max TCP retransmission attempts (matches Windows `TcpMaxDataRetransmissions=5`). Default kernel value is 15 (~15 min timeout). Setting to 5 gives ~6 second timeout for dead connections. |
 
 **Note:** With `--net=host`, these settings affect the host system. The container restores the original `tcp_retries2` value on shutdown. As an alternative, set `tcp_retries2` on the host directly (see Host Method above).
 
@@ -207,7 +207,7 @@ Go's runtime on Linux uses raw syscalls via assembly (`RawSyscall6` → `SYS_ACC
 When a client (Shield TV) stops acknowledging data:
 1. The kernel retransmits with exponential backoff
 2. With default `tcp_retries2=15`, this takes ~15 minutes before cleanup
-3. With `tcp_retries2=8`, dead connections are cleaned up in ~51 seconds
+3. With `tcp_retries2=5`, dead connections are cleaned up in ~6 seconds
 
 ## Troubleshooting
 

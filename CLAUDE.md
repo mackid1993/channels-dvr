@@ -13,7 +13,7 @@ Channels DVR streaming worked perfectly on Windows but had severe issues on Linu
 
 **Dead TCP connections linger for ~15 minutes with the default kernel setting (`tcp_retries2=15`).** NVIDIA Shield TV is particularly sensitive to stale connections — they pile up and streams die.
 
-The fix is reducing `tcp_retries2` to 8, which cleans up dead connections in ~51 seconds instead of ~15 minutes. This is a kernel-level sysctl parameter that **Go cannot override** — there is no per-socket `setsockopt()` for it, making it the only effective TCP tuning for Go applications.
+The fix is reducing `tcp_retries2` to 5 (matching Windows' `TcpMaxDataRetransmissions=5`), which cleans up dead connections in ~6 seconds instead of ~15 minutes. This is a kernel-level sysctl parameter that **Go cannot override** — there is no per-socket `setsockopt()` for it, making it the only effective TCP tuning for Go applications.
 
 The container also uses **Debian Bookworm** (glibc) instead of Alpine (musl) for broader TCP socket compatibility.
 
@@ -74,7 +74,7 @@ exec gosu channels "$@" > /dev/null 2>&1
 | Setting | Value | Timeout |
 |---------|-------|---------|
 | Default | `tcp_retries2=15` | ~15 minutes for dead connections |
-| **Tuned** | **`tcp_retries2=8`** | **~51 seconds for dead connections** |
+| **Tuned** | **`tcp_retries2=5`** | **~6 seconds for dead connections** |
 
 - Enabled via `TCP_TUNING=1` environment variable
 - Requires `--privileged` (Docker mounts `/proc/sys` read-only; `--cap-add=NET_ADMIN` alone is insufficient)
@@ -184,7 +184,7 @@ cat /proc/net/nf_conntrack | grep 8089
 
 ## Lessons Learned
 
-1. **`tcp_retries2` is the fix** — The kernel parameter that controls dead connection timeout. Go cannot override it (no per-socket setsockopt). Default 15 = ~15 min. Value 8 = ~51 sec.
+1. **`tcp_retries2` is the fix** — The kernel parameter that controls dead connection timeout. Go cannot override it (no per-socket setsockopt). Default 15 = ~15 min. Value 5 = ~6 sec (matches Windows `TcpMaxDataRetransmissions=5`).
 2. **LD_PRELOAD doesn't work with Go** — Go bypasses libc entirely for socket operations, using raw syscalls via assembly. LD_PRELOAD can only intercept libc wrappers, not kernel syscalls.
 3. **Docker /proc/sys is read-only** — Docker mounts `/proc/sys` as read-only in ALL non-privileged containers. `--cap-add=NET_ADMIN` grants the capability but the read-only filesystem blocks the write. Only `--privileged` removes this restriction.
 4. **`exec` prevents signal traps** — `exec` replaces bash, so traps never fire. Use background+wait to keep bash alive for cleanup.
