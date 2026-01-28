@@ -44,7 +44,7 @@ sysctl -w net.ipv4.tcp_keepalive_time=300
 
 Tried adding NET_ADMIN, NET_RAW, SYS_NICE capabilities and disabling seccomp.
 
-**Result:** Not needed for the glibc fix. Capabilities are only needed for the optional `tcp_retries2` hardening (see below).
+**Result:** Not needed for the glibc fix. `CAP_NET_ADMIN` alone is also insufficient for sysctl writes — Docker mounts `/proc/sys` as read-only in all non-privileged containers. Only `--privileged` removes this restriction. Capabilities are only needed for the optional `tcp_retries2` hardening via `--privileged` (see below).
 
 ### Go Runtime Tuning (GODEBUG/GOGC)
 
@@ -72,7 +72,8 @@ For additional TCP timeout protection, the container supports reducing `net.ipv4
 - Default: `tcp_retries2=15` (~15 minute timeout for dead connections)
 - Tuned: `tcp_retries2=8` (~51 second timeout)
 - Enabled via `TCP_TUNING=1` environment variable
-- Requires `CAP_NET_ADMIN` (or `--privileged`)
+- Requires `--privileged` (Docker mounts `/proc/sys` read-only; `--cap-add=NET_ADMIN` alone is insufficient)
+- Alternatively, set `tcp_retries2` directly on the host (no container privileges needed)
 - With `--net=host`, this affects the host system
 
 ## Container Architecture
