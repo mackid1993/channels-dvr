@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY bpf/tcp_user_timeout.bpf.c /bpf/
 RUN clang -O2 -g -target bpf \
+    -I/usr/include/x86_64-linux-gnu \
     -c /bpf/tcp_user_timeout.bpf.c \
     -o /bpf/tcp_user_timeout.o
 
