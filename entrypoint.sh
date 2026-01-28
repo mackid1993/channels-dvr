@@ -65,6 +65,9 @@ fi
 # =============================================================================
 SYSCTL_MODIFIED=false
 ORIGINAL_TCP_RETRIES2=15
+ORIGINAL_SLOW_START=""
+ORIGINAL_NO_METRICS=""
+ORIGINAL_MTU_PROBING=""
 EBPF_LOADED=false
 EBPF_CGROUP=""
 
@@ -72,16 +75,16 @@ if [ "${TCP_TUNING:-0}" = "1" ]; then
     echo "TCP tuning enabled"
 
     # --- Layer 1: tcp_retries2 sysctl (system-wide) ---
-    # Reduces dead connection timeout from ~15min to ~51sec
+    # Reduces dead connection timeout from ~15min to ~6sec
     # Note: With --net=host this affects the host
     ORIGINAL_TCP_RETRIES2=$(sysctl -n net.ipv4.tcp_retries2 2>/dev/null || echo "15")
-    if sysctl -w net.ipv4.tcp_retries2="${TCP_RETRIES2:-8}" > /dev/null 2>&1; then
+    if sysctl -w net.ipv4.tcp_retries2="${TCP_RETRIES2:-5}" > /dev/null 2>&1; then
         SYSCTL_MODIFIED=true
-        echo "  tcp_retries2 set to ${TCP_RETRIES2:-8} (was $ORIGINAL_TCP_RETRIES2)"
+        echo "  tcp_retries2 set to ${TCP_RETRIES2:-5} (was $ORIGINAL_TCP_RETRIES2)"
     else
         echo "  WARNING: Could not set tcp_retries2. /proc/sys is read-only."
         echo "  Option 1: Run container with --privileged"
-        echo "  Option 2: Set on host: sysctl -w net.ipv4.tcp_retries2=${TCP_RETRIES2:-8}"
+        echo "  Option 2: Set on host: sysctl -w net.ipv4.tcp_retries2=${TCP_RETRIES2:-5}"
     fi
 
     # --- Layer 2: eBPF TCP_USER_TIMEOUT (per-socket, container-scoped) ---
@@ -147,13 +150,23 @@ if [ "${TCP_TUNING:-0}" = "1" ]; then
     fi
 
     # --- Layer 3: Additional TCP sysctls for streaming ---
-    # These are best-effort; failures are silently ignored
+    # Save originals for cleanup, then apply
+    ORIGINAL_SLOW_START=$(sysctl -n net.ipv4.tcp_slow_start_after_idle 2>/dev/null || echo "")
+    ORIGINAL_NO_METRICS=$(sysctl -n net.ipv4.tcp_no_metrics_save 2>/dev/null || echo "")
+    ORIGINAL_MTU_PROBING=$(sysctl -n net.ipv4.tcp_mtu_probing 2>/dev/null || echo "")
+
     # Don't reset congestion window after idle periods (streaming has gaps)
-    sysctl -w net.ipv4.tcp_slow_start_after_idle=0 > /dev/null 2>&1 || true
+    if sysctl -w net.ipv4.tcp_slow_start_after_idle=0 > /dev/null 2>&1; then
+        echo "  tcp_slow_start_after_idle set to 0 (was $ORIGINAL_SLOW_START)"
+    fi
     # Don't cache TCP metrics from previous connections (prevents bad RTT estimates)
-    sysctl -w net.ipv4.tcp_no_metrics_save=1 > /dev/null 2>&1 || true
+    if sysctl -w net.ipv4.tcp_no_metrics_save=1 > /dev/null 2>&1; then
+        echo "  tcp_no_metrics_save set to 1 (was $ORIGINAL_NO_METRICS)"
+    fi
     # Enable MTU probing (helps with PMTUD black holes on some networks)
-    sysctl -w net.ipv4.tcp_mtu_probing=1 > /dev/null 2>&1 || true
+    if sysctl -w net.ipv4.tcp_mtu_probing=1 > /dev/null 2>&1; then
+        echo "  tcp_mtu_probing set to 1 (was $ORIGINAL_MTU_PROBING)"
+    fi
 fi
 
 # Build DVR arguments (matching official FancyBits run.sh)
@@ -181,10 +194,13 @@ cleanup() {
         bpftool cgroup detach "$EBPF_CGROUP" sock_ops pinned /sys/fs/bpf/tcp_user_timeout 2>/dev/null || true
         rm -f /sys/fs/bpf/tcp_user_timeout
     fi
-    # Restore tcp_retries2
+    # Restore all modified sysctls
     if [ "$SYSCTL_MODIFIED" = "true" ]; then
-        echo "Restoring tcp_retries2 to $ORIGINAL_TCP_RETRIES2..."
-        sysctl -w net.ipv4.tcp_retries2="$ORIGINAL_TCP_RETRIES2" || true
+        echo "Restoring sysctls..."
+        sysctl -w net.ipv4.tcp_retries2="$ORIGINAL_TCP_RETRIES2" 2>/dev/null || true
+        [ -n "$ORIGINAL_SLOW_START" ] && sysctl -w net.ipv4.tcp_slow_start_after_idle="$ORIGINAL_SLOW_START" 2>/dev/null || true
+        [ -n "$ORIGINAL_NO_METRICS" ] && sysctl -w net.ipv4.tcp_no_metrics_save="$ORIGINAL_NO_METRICS" 2>/dev/null || true
+        [ -n "$ORIGINAL_MTU_PROBING" ] && sysctl -w net.ipv4.tcp_mtu_probing="$ORIGINAL_MTU_PROBING" 2>/dev/null || true
     fi
     kill -TERM "$DVR_PID" 2>/dev/null
 }
