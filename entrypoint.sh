@@ -105,6 +105,9 @@ cleanup() {
 }
 trap cleanup SIGTERM SIGINT
 
+# Set permissive umask for Unraid SMB compatibility (files 666, dirs 777)
+umask 0000
+
 # Run DVR from data directory (matching official FancyBits layout)
 cd /channels-dvr/data
 gosu channels ../latest/channels-dvr $DVR_ARGS &
