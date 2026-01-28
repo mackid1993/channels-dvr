@@ -60,24 +60,6 @@ if command -v nvidia-smi &> /dev/null; then
     echo "NVIDIA GPU detected"
 fi
 
-# TCP timeout hardening (opt-in)
-# Reduces tcp_retries2 to clean up dead connections faster (~51sec vs ~15min)
-# Note: With --net=host this affects the host. Requires --privileged for /proc/sys write access.
-SYSCTL_MODIFIED=false
-ORIGINAL_TCP_RETRIES2=15
-if [ "${TCP_TUNING:-0}" = "1" ]; then
-    ORIGINAL_TCP_RETRIES2=$(sysctl -n net.ipv4.tcp_retries2 2>/dev/null || echo "15")
-    echo "TCP tuning enabled (tcp_retries2=${TCP_RETRIES2:-8})"
-    if sysctl -w net.ipv4.tcp_retries2="${TCP_RETRIES2:-8}" > /dev/null 2>&1; then
-        SYSCTL_MODIFIED=true
-        echo "  tcp_retries2 set to ${TCP_RETRIES2:-8} (was $ORIGINAL_TCP_RETRIES2)"
-    else
-        echo "  WARNING: Could not set tcp_retries2. /proc/sys is read-only."
-        echo "  Option 1: Run container with --privileged"
-        echo "  Option 2: Set on host: sysctl -w net.ipv4.tcp_retries2=${TCP_RETRIES2:-8}"
-    fi
-fi
-
 # Build DVR arguments (matching official FancyBits run.sh)
 DVR_ARGS="-dir /channels-dvr/data"
 if [ -n "$CHANNELS_HOST" ]; then
@@ -95,15 +77,8 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 # Disable set -e for signal handling (wait returns non-zero on signal)
 set +e
 
-# Clean up TCP tuning on shutdown, then forward signal to DVR
-cleanup() {
-    if [ "$SYSCTL_MODIFIED" = "true" ]; then
-        echo "Restoring tcp_retries2 to $ORIGINAL_TCP_RETRIES2..."
-        sysctl -w net.ipv4.tcp_retries2="$ORIGINAL_TCP_RETRIES2" || true
-    fi
-    kill -TERM "$DVR_PID" 2>/dev/null
-}
-trap cleanup SIGTERM SIGINT
+# Forward shutdown signal to DVR
+trap 'kill -TERM "$DVR_PID" 2>/dev/null' SIGTERM SIGINT
 
 # Set permissive umask for Unraid SMB compatibility (files 666, dirs 777)
 umask 0000

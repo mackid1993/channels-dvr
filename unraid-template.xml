@@ -9,18 +9,15 @@
   <Privileged>false</Privileged>
   <Support/>
   <Project>https://getchannels.com/</Project>
-  <Overview>Channels DVR Server for stable NVIDIA Shield streaming.&#xD;
+  <Overview>Channels DVR Server for Unraid.&#xD;
 &#xD;
 Based on Debian Bookworm with minimal tini init system.&#xD;
-Uses glibc (not Alpine's musl) which fixes Shield TV streaming issues.&#xD;
 &#xD;
 Key Features:&#xD;
-- Stable streaming to NVIDIA Shield TV&#xD;
 - Proper PUID/PGID mapping (no root-owned files)&#xD;
 - TV Everywhere (TVE) support with Google Chrome&#xD;
 - Intel QuickSync hardware transcoding (pass /dev/dri)&#xD;
 - NVIDIA GPU support (set NVIDIA_VISIBLE_DEVICES=all in Advanced settings)&#xD;
-- Optional TCP timeout hardening (requires Privileged mode or host sysctl)&#xD;
 - App handles its own updates (including pre-releases)</Overview>
   <Category>MediaServer:Video</Category>
   <WebUI>http://[IP]:8089</WebUI>
@@ -39,8 +36,6 @@ Key Features:&#xD;
   <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Group ID - Use 100 for users on Unraid" Type="Variable" Display="always" Required="false" Mask="false">100</Config>
   <Config Name="Timezone" Target="TZ" Default="America/New_York" Mode="" Description="Timezone" Type="Variable" Display="always" Required="false" Mask="false">America/New_York</Config>
   <Config Name="Intel GPU" Target="/dev/dri" Default="/dev/dri" Mode="" Description="Intel GPU for hardware transcoding" Type="Device" Display="always" Required="false" Mask="false">/dev/dri</Config>
-  <Config Name="TCP Tuning" Target="TCP_TUNING" Default="0" Mode="" Description="Set to 1 to enable TCP timeout hardening. Reduces dead connection cleanup from ~15min to ~51sec. Requires Privileged mode (toggle above) or set sysctl on host instead." Type="Variable" Display="advanced" Required="false" Mask="false">0</Config>
-  <Config Name="TCP Retries" Target="TCP_RETRIES2" Default="8" Mode="" Description="Max TCP retransmission attempts. Default kernel value is 15 (~15min timeout). Value of 8 gives ~51sec timeout. Only applies when TCP_TUNING=1." Type="Variable" Display="advanced" Required="false" Mask="false">8</Config>
   <Config Name="NVIDIA Visible Devices" Target="NVIDIA_VISIBLE_DEVICES" Default="" Mode="" Description="NVIDIA GPUs to use. Set to 'all' for all GPUs, or specific GPU ID like '0'. Leave empty to disable NVIDIA. Requires Unraid NVIDIA plugin." Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
   <Config Name="NVIDIA Driver Capabilities" Target="NVIDIA_DRIVER_CAPABILITIES" Default="compute,video,utility" Mode="" Description="NVIDIA capabilities: compute, video, utility, graphics. Default handles transcoding." Type="Variable" Display="advanced" Required="false" Mask="false">compute,video,utility</Config>
   </Container>
