@@ -62,10 +62,14 @@ fi
 # TCP timeout hardening (opt-in)
 # Reduces tcp_retries2 to clean up dead connections faster (~51sec vs ~15min)
 # Note: With --net=host this affects the host. Requires --privileged for /proc/sys write access.
+SYSCTL_MODIFIED=false
+ORIGINAL_TCP_RETRIES2=15
 if [ "${TCP_TUNING:-0}" = "1" ]; then
+    ORIGINAL_TCP_RETRIES2=$(sysctl -n net.ipv4.tcp_retries2 2>/dev/null || echo "15")
     echo "TCP tuning enabled (tcp_retries2=${TCP_RETRIES2:-8})"
     if sysctl -w net.ipv4.tcp_retries2="${TCP_RETRIES2:-8}" > /dev/null 2>&1; then
-        echo "  tcp_retries2 set to ${TCP_RETRIES2:-8}"
+        SYSCTL_MODIFIED=true
+        echo "  tcp_retries2 set to ${TCP_RETRIES2:-8} (was $ORIGINAL_TCP_RETRIES2)"
     else
         echo "  WARNING: Could not set tcp_retries2. /proc/sys is read-only."
         echo "  Option 1: Run container with --privileged"
@@ -78,8 +82,20 @@ echo "  Starting Channels DVR Server"
 echo "  Web UI: http://localhost:8089"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Run the command as the channels user
-# Redirect stdout/stderr to /dev/null so the DVR uses its own internal log files.
-# Without this, output goes to Docker logs and the DVR's web log viewer breaks.
+# Clean up TCP tuning on shutdown, then forward signal to DVR
+cleanup() {
+    if [ "$SYSCTL_MODIFIED" = "true" ]; then
+        sysctl -w net.ipv4.tcp_retries2="$ORIGINAL_TCP_RETRIES2" > /dev/null 2>&1 || true
+        echo "Restored tcp_retries2 to $ORIGINAL_TCP_RETRIES2"
+    fi
+    kill -TERM "$DVR_PID" 2>/dev/null || true
+}
+trap cleanup SIGTERM SIGINT
+
+# Run DVR in background so bash stays alive for signal handling
+# DVR creates channels-dvr-http.log itself — no stdout redirect needed
 cd /channels-dvr
-exec gosu channels "$@" > /dev/null 2>&1
+gosu channels "$@" &
+DVR_PID=$!
+wait "$DVR_PID"
+exit $?
