@@ -1,12 +1,6 @@
 name: Build and Push Docker Image
 
 on:
-  push:
-    branches:
-      - main
-      - master
-    tags:
-      - 'v*'
   schedule:
     # Rebuild on the 1st of every month at midnight Eastern Time (5:00 UTC)
     - cron: '0 5 1 * *'

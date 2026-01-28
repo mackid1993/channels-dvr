@@ -1,33 +1,30 @@
 # Channels DVR Docker Container
 
-A Debian-based Docker container for [Channels DVR](https://getchannels.com/) that fixes NVIDIA Shield TV streaming issues and includes hardware transcoding support.
+A Debian-based Docker container for [Channels DVR](https://getchannels.com/) with TCP hardening that fixes NVIDIA Shield TV streaming issues, plus hardware transcoding support.
 
 ## Why This Exists
 
-Channels DVR streams work perfectly on Windows but can suffer from connection stability issues on Linux/Docker, **specifically when streaming to NVIDIA Shield TV**:
+Channels DVR streams work perfectly on most clients but can suffer from connection stability issues on Linux/Docker **when streaming to NVIDIA Shield TV**:
 - Streams die after ~6 minutes
 - TCP connections get stuck in ESTABLISHED state
 - Only affects NVIDIA Shield TV — other clients (phones, tablets, web browsers, Apple TV) work fine
 
-### Root Cause: musl vs glibc
+### The Fix: TCP Hardening
 
-The official FancyBits Docker image uses **Alpine Linux** (musl libc). This container uses **Debian Bookworm** (glibc), which handles TCP connections correctly with NVIDIA Shield TV.
+The kernel parameter `tcp_retries2` controls how long dead TCP connections linger before cleanup. The default value of 15 means ~15 minutes before the kernel gives up on a dead connection. NVIDIA Shield TV is particularly sensitive to this — stale connections pile up and streams die.
 
-| Container | Base | libc | Shield TV Result |
-|-----------|------|------|-----------------|
-| FancyBits official | Alpine | musl | Streams die at ~6 min |
-| **This container** | **Debian Bookworm** | **glibc** | **Stable** |
+Setting `tcp_retries2=8` reduces the dead connection timeout to ~51 seconds. This is a kernel-level sysctl parameter that **Go cannot override** (there is no per-socket `setsockopt()` for it), making it the only effective TCP tuning for Go applications.
 
-Go applications behave differently on musl vs glibc when managing TCP sockets. Shield TV is particularly sensitive to these differences.
+This container also uses **Debian Bookworm** (glibc) instead of Alpine (musl) for broader compatibility.
 
 ## Features
 
-- **Debian glibc base** — Fixes Shield TV streaming stability vs Alpine/musl
+- **TCP hardening** — Kernel-level TCP timeout tuning that fixes Shield TV streaming
+- **Debian glibc base** — Broader compatibility vs Alpine/musl
 - **PUID/PGID support** — Proper user mapping for Unraid and other systems
 - **TV Everywhere (TVE)** — Google Chrome for TVE authentication
 - **Intel QuickSync** — Hardware transcoding support
 - **NVIDIA GPU** — Support via nvidia-container-toolkit
-- **TCP hardening** — Optional kernel-level TCP timeout tuning
 - **Auto-updates** — App handles its own updates (including pre-releases)
 
 ## Quick Start
@@ -36,9 +33,11 @@ Go applications behave differently on musl vs glibc when managing TCP sockets. S
 docker run -d \
   --name channels-dvr \
   --net=host \
+  --privileged \
   -e PUID=99 \
   -e PGID=100 \
   -e TZ=America/New_York \
+  -e TCP_TUNING=1 \
   -v /path/to/config:/channels-dvr \
   -v /path/to/recordings:/shares/DVR \
   --device /dev/dri:/dev/dri \
@@ -46,29 +45,6 @@ docker run -d \
 ```
 
 ## Docker Compose
-
-```yaml
-version: "3.8"
-services:
-  channels-dvr:
-    image: ghcr.io/mackid1993/channels-dvr:latest
-    container_name: channels-dvr
-    network_mode: host
-    restart: unless-stopped
-    environment:
-      - PUID=99
-      - PGID=100
-      - TZ=America/New_York
-    volumes:
-      - /path/to/config:/channels-dvr
-      - /path/to/recordings:/shares/DVR
-    devices:
-      - /dev/dri:/dev/dri
-```
-
-### With TCP Hardening (Container Method)
-
-If you experience dead/stuck connections, enable TCP timeout tuning. This requires `privileged: true` because Docker mounts `/proc/sys` as read-only in non-privileged containers — `cap_add: [NET_ADMIN]` alone is not sufficient.
 
 ```yaml
 version: "3.8"
@@ -91,7 +67,7 @@ services:
       - /dev/dri:/dev/dri
 ```
 
-### With TCP Hardening (Host Method — No Privileged Mode)
+### TCP Hardening Without Privileged Mode (Host Method)
 
 If you prefer not to run the container in privileged mode, set `tcp_retries2` directly on the host. Since `--net=host` shares the host's network namespace, the container inherits the setting automatically.
 
@@ -107,7 +83,26 @@ echo "net.ipv4.tcp_retries2 = 8" > /etc/sysctl.d/99-channels-dvr.conf
 echo 'sysctl -w net.ipv4.tcp_retries2=8' >> /boot/config/go
 ```
 
-No container changes needed — just use the basic Docker Compose example above.
+Then use Docker Compose without `privileged` or `TCP_TUNING`:
+
+```yaml
+version: "3.8"
+services:
+  channels-dvr:
+    image: ghcr.io/mackid1993/channels-dvr:latest
+    container_name: channels-dvr
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      - PUID=99
+      - PGID=100
+      - TZ=America/New_York
+    volumes:
+      - /path/to/config:/channels-dvr
+      - /path/to/recordings:/shares/DVR
+    devices:
+      - /dev/dri:/dev/dri
+```
 
 ## Environment Variables
 
@@ -119,16 +114,14 @@ No container changes needed — just use the basic Docker Compose example above.
 | `PGID` | 100 | Group ID for file permissions (100 = users on Unraid) |
 | `TZ` | America/New_York | Timezone for scheduling |
 
-### TCP Hardening (Optional)
-
-These settings reduce the time it takes to clean up dead TCP connections. Useful if you experience stuck streams or stale connections.
+### TCP Hardening
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `TCP_TUNING` | 0 | Set to `1` to enable TCP timeout hardening. Requires `--privileged` (Docker mounts `/proc/sys` read-only in non-privileged containers). |
 | `TCP_RETRIES2` | 8 | Max TCP retransmission attempts. Default kernel value is 15 (~15 min timeout). Setting to 8 gives ~51 second timeout for dead connections. |
 
-**Note:** With `--net=host`, these settings affect the host system. This is acceptable for a dedicated media server. As an alternative, you can set `tcp_retries2` on the host directly (see Host Method above) and skip `TCP_TUNING` entirely.
+**Note:** With `--net=host`, these settings affect the host system. The container restores the original `tcp_retries2` value on shutdown. As an alternative, set `tcp_retries2` on the host directly (see Host Method above).
 
 ### GPU Settings
 
@@ -178,6 +171,7 @@ deploy:
 3. Use template URL or manually configure:
    - Repository: `ghcr.io/mackid1993/channels-dvr:latest`
    - Network: `host`
+   - Privileged: `on` (for TCP hardening)
    - Add path mappings and environment variables as shown above
 
 TCP hardening variables are available in the advanced section of the Unraid template.
@@ -206,15 +200,13 @@ Earlier versions attempted to use [libkeepalive](https://github.com/msantos/libk
 
 Go's runtime on Linux uses raw syscalls via assembly (`RawSyscall6` → `SYS_ACCEPT4`, `SYS_CONNECT`, etc.), completely bypassing libc. `LD_PRELOAD` intercepts libc function wrappers, not kernel syscalls, so it **cannot** intercept Go's network operations.
 
-The `LD_PRELOAD` only affected other processes in the container (Chrome, curl, wget), causing unpredictable behavior without ever reaching the DVR binary's sockets.
-
 ### Why tcp_retries2 Works
 
 `tcp_retries2` is a kernel-level sysctl parameter that controls the maximum number of TCP retransmission attempts. Unlike TCP keepalive settings (which Go overrides via `setsockopt()`), there is **no per-socket option** for `tcp_retries2` — it can only be set system-wide via sysctl. Go cannot override it.
 
-This matters for streaming because when a client (Shield TV) stops acknowledging data:
+When a client (Shield TV) stops acknowledging data:
 1. The kernel retransmits with exponential backoff
-2. With default `tcp_retries2=15`, this takes ~15 minutes before the connection is cleaned up
+2. With default `tcp_retries2=15`, this takes ~15 minutes before cleanup
 3. With `tcp_retries2=8`, dead connections are cleaned up in ~51 seconds
 
 ## Troubleshooting
