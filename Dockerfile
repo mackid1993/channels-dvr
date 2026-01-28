@@ -55,7 +55,7 @@ RUN wget -qO - https://repositories.intel.com/gpu/intel-graphics.key | \
     rm -rf /var/lib/apt/lists/*
 
 # Create directories
-RUN mkdir -p /channels-dvr /shares/DVR
+RUN mkdir -p /channels-dvr/data /shares/DVR
 
 # Copy entrypoint script
 COPY entrypoint.sh /entrypoint.sh
