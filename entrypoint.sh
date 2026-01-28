@@ -30,6 +30,7 @@ fi
 
 # Set ownership of directories
 echo "Setting permissions..."
+mkdir -p /channels-dvr/data
 chown -R channels:channels /channels-dvr
 chown channels:channels /shares/DVR 2>/dev/null || true
 
@@ -77,25 +78,36 @@ if [ "${TCP_TUNING:-0}" = "1" ]; then
     fi
 fi
 
+# Build DVR arguments (matching official FancyBits run.sh)
+DVR_ARGS="-dir /channels-dvr/data"
+if [ -n "$CHANNELS_HOST" ]; then
+    DVR_ARGS="$DVR_ARGS -host $CHANNELS_HOST"
+fi
+if [ -n "$CHANNELS_PORT" ]; then
+    DVR_ARGS="$DVR_ARGS -port $CHANNELS_PORT"
+fi
+
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  Starting Channels DVR Server"
 echo "  Web UI: http://localhost:8089"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
+# Disable set -e for signal handling (wait returns non-zero on signal)
+set +e
+
 # Clean up TCP tuning on shutdown, then forward signal to DVR
 cleanup() {
     if [ "$SYSCTL_MODIFIED" = "true" ]; then
-        sysctl -w net.ipv4.tcp_retries2="$ORIGINAL_TCP_RETRIES2" > /dev/null 2>&1 || true
-        echo "Restored tcp_retries2 to $ORIGINAL_TCP_RETRIES2"
+        echo "Restoring tcp_retries2 to $ORIGINAL_TCP_RETRIES2..."
+        sysctl -w net.ipv4.tcp_retries2="$ORIGINAL_TCP_RETRIES2" || true
     fi
-    kill -TERM "$DVR_PID" 2>/dev/null || true
+    kill -TERM "$DVR_PID" 2>/dev/null
 }
 trap cleanup SIGTERM SIGINT
 
-# Run DVR in background so bash stays alive for signal handling
-# DVR creates channels-dvr-http.log itself — no stdout redirect needed
-cd /channels-dvr
-gosu channels "$@" &
+# Run DVR from data directory (matching official FancyBits layout)
+cd /channels-dvr/data
+gosu channels ../latest/channels-dvr $DVR_ARGS &
 DVR_PID=$!
 wait "$DVR_PID"
 exit $?
