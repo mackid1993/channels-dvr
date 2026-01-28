@@ -5,7 +5,8 @@ A Debian-based Docker container for [Channels DVR](https://getchannels.com/) wit
 ## Why This Exists
 
 Channels DVR streams work perfectly on most clients but can suffer from connection stability issues on Linux/Docker **when streaming to NVIDIA Shield TV**:
-- Streams die after ~6 minutes
+- Streams die after within 20 minutes
+- The client may render a black screen and get stuck until the container is restarted
 - TCP connections get stuck in ESTABLISHED state
 - Only affects NVIDIA Shield TV — other clients (phones, tablets, web browsers, Apple TV) work fine
 
