@@ -131,9 +131,7 @@ sudo systemctl restart docker
 2. Configure the container for NVIDIA:
    - Go to **Docker** tab → click on the channels-dvr container → **Edit**
    - Scroll down to **Extra Parameters** and add: `--gpus all`
-   - Add these environment variables (click **Add another Path, Port, Variable, Label or Device**):
-     - **Variable**: `NVIDIA_VISIBLE_DEVICES` = `all`
-     - **Variable**: `NVIDIA_DRIVER_CAPABILITIES` = `compute,video,utility`
+   - In **Advanced View**, set **NVIDIA Visible Devices** to `all`
    - Click **Apply**
 
 3. Verify it's working:
