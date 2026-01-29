@@ -28,11 +28,15 @@ else
     usermod -o -u "$PUID" -g "$PGID" channels 2>/dev/null || true
 fi
 
-# Set ownership of directories (top-level only - recursive chown is expensive on large DVR libraries)
-echo "Setting permissions..."
+# Create directories and set ownership only on first run
 mkdir -p /channels-dvr/data
-chown channels:channels /channels-dvr /channels-dvr/data 2>/dev/null || true
-chown channels:channels /shares/DVR 2>/dev/null || true
+if [ ! -f /channels-dvr/data/.initialized ]; then
+    echo "First run detected, setting permissions..."
+    chown channels:channels /channels-dvr /channels-dvr/data 2>/dev/null || true
+    chown channels:channels /shares/DVR 2>/dev/null || true
+    touch /channels-dvr/data/.initialized
+    chown channels:channels /channels-dvr/data/.initialized
+fi
 
 # Download Channels DVR if not present (first run only)
 if [ ! -f /channels-dvr/latest/channels-dvr ]; then
