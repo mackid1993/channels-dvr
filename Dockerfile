@@ -5,7 +5,7 @@
 #   - NVIDIA GPU support (via nvidia-container-toolkit)
 #   - TVE (TV Everywhere) with Google Chrome
 
-FROM debian:bookworm-slim
+FROM --platform=linux/amd64 debian:bookworm-slim
 
 ARG BUILD_DATE
 ARG VERSION
@@ -22,7 +22,7 @@ ENV PGID=100
 ENV UMASK=0000
 ENV TZ=America/New_York
 # NVIDIA GPU support (requires --runtime=nvidia or --gpus all)
-ENV NVIDIA_VISIBLE_DEVICES=
+ENV NVIDIA_VISIBLE_DEVICES=void
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
 
 # Install tini and core dependencies
