@@ -67,7 +67,7 @@ if [ -e /dev/nvidia0 ]; then
     getent group video >/dev/null && usermod -aG video channels 2>/dev/null || true
 fi
 
-# Build DVR arguments (matching official FancyBits run.sh)
+# Build DVR arguments
 DVR_ARGS=(-dir /channels-dvr/data)
 if [ -n "$CHANNELS_HOST" ]; then
     DVR_ARGS+=(-host "$CHANNELS_HOST")
@@ -87,6 +87,6 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 # Set umask (default 0000 for Unraid SMB compatibility)
 umask "${UMASK:-0000}"
 
-# Run DVR from data directory (matching official FancyBits layout)
+# Run DVR
 cd /channels-dvr/data
 exec gosu channels ../latest/channels-dvr "${DVR_ARGS[@]}"
