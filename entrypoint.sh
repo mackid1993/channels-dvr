@@ -14,8 +14,12 @@ echo "  Channels DVR - Starting"
 echo "  UID: $PUID | GID: $PGID"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Ensure group exists with correct GID
-groupadd -o -g "$PGID" channels 2>/dev/null || groupmod -g "$PGID" channels 2>/dev/null || true
+# Create group if it doesn't exist
+if ! getent group channels > /dev/null 2>&1; then
+    groupadd -o -g "$PGID" channels
+else
+    groupmod -o -g "$PGID" channels 2>/dev/null || true
+fi
 
 # Create user if it doesn't exist
 if ! getent passwd channels > /dev/null 2>&1; then
@@ -24,17 +28,12 @@ else
     usermod -o -u "$PUID" -g "$PGID" channels 2>/dev/null || true
 fi
 
-# Create directories and set ownership only on first run or PUID/PGID change
+# Set ownership of directories
+echo "Setting permissions..."
 mkdir -p /channels-dvr/data
-CURRENT_UID=$(stat -c %u /channels-dvr/data 2>/dev/null || echo "")
-CURRENT_GID=$(stat -c %g /channels-dvr/data 2>/dev/null || echo "")
-if [ ! -f /channels-dvr/data/.initialized ] || [ "$CURRENT_UID" != "$PUID" ] || [ "$CURRENT_GID" != "$PGID" ]; then
-    echo "Setting permissions (first run or PUID/PGID change detected)..."
-    chown channels:channels /channels-dvr /channels-dvr/data 2>/dev/null || true
-    chown channels:channels /shares/DVR 2>/dev/null || true
-    touch /channels-dvr/data/.initialized
-    chown channels:channels /channels-dvr/data/.initialized
-fi
+chown channels:channels /channels-dvr
+chown -R channels:channels /channels-dvr/data 2>/dev/null || true
+chown channels:channels /shares/DVR 2>/dev/null || true
 
 # Download Channels DVR if not present (first run only)
 if [ ! -f /channels-dvr/latest/channels-dvr ]; then
@@ -55,18 +54,16 @@ fi
 # Check for Intel GPU
 if [ -e /dev/dri ]; then
     echo "Intel GPU detected at /dev/dri"
-    for grp in video render; do
-        getent group "$grp" >/dev/null && usermod -aG "$grp" channels 2>/dev/null || true
-    done
+    usermod -aG video,render channels 2>/dev/null || true
 fi
 
 # Check for NVIDIA GPU
 if [ -e /dev/nvidia0 ]; then
     echo "NVIDIA GPU detected"
-    getent group video >/dev/null && usermod -aG video channels 2>/dev/null || true
+    usermod -aG video channels 2>/dev/null || true
 fi
 
-# Build DVR arguments
+# Build DVR arguments (matching official FancyBits run.sh)
 DVR_ARGS=(-dir /channels-dvr/data)
 if [ -n "$CHANNELS_HOST" ]; then
     DVR_ARGS+=(-host "$CHANNELS_HOST")
@@ -80,12 +77,12 @@ SERVER_IP=$(hostname -I | awk '{print $1}')
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  Starting Channels DVR Server"
-echo "  Web UI: http://${SERVER_IP:-localhost}:8089"
+echo "  Web UI: http://${SERVER_IP:-localhost}:${CHANNELS_PORT:-8089}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # Set umask (default 0000 for Unraid SMB compatibility)
 umask "${UMASK:-0000}"
 
-# Run DVR
+# Run DVR from data directory (matching official FancyBits layout)
 cd /channels-dvr/data
 exec gosu channels ../latest/channels-dvr "${DVR_ARGS[@]}"
