@@ -14,12 +14,9 @@ echo "  Channels DVR - Starting"
 echo "  UID: $PUID | GID: $PGID"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Create group if it doesn't exist
-if ! getent group channels > /dev/null 2>&1; then
-    groupadd -o -g "$PGID" channels
-else
-    groupmod -o -g "$PGID" channels 2>/dev/null || true
-fi
+# Create/recreate group with correct GID
+groupdel channels 2>/dev/null || true
+groupadd -o -g "$PGID" channels
 
 # Create user if it doesn't exist
 if ! getent passwd channels > /dev/null 2>&1; then
@@ -59,13 +56,15 @@ fi
 # Check for Intel GPU
 if [ -e /dev/dri ]; then
     echo "Intel GPU detected at /dev/dri"
-    usermod -aG video,render channels 2>/dev/null || true
+    for grp in video render; do
+        getent group "$grp" >/dev/null && usermod -aG "$grp" channels 2>/dev/null || true
+    done
 fi
 
 # Check for NVIDIA GPU
 if [ -e /dev/nvidia0 ]; then
     echo "NVIDIA GPU detected"
-    usermod -aG video channels 2>/dev/null || true
+    getent group video >/dev/null && usermod -aG video channels 2>/dev/null || true
 fi
 
 # Build DVR arguments (matching official FancyBits run.sh)
