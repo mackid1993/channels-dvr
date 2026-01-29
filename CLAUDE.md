@@ -2,6 +2,12 @@
 
 This document explains the container setup.
 
+## Key Design Decisions
+
+- **Unraid permissions** — PUID/PGID mapping + `umask 0000` for SMB file deletion compatibility
+- **Monthly rebuilds** — Fresh Debian base with latest security patches via GitHub Actions
+- **GPU optional** — Hardware transcoding (Intel QuickSync, NVIDIA) not enabled by default
+
 ## Container Architecture
 
 ### Base Image
@@ -28,7 +34,7 @@ This document explains the container setup.
 |------|---------|
 | `Dockerfile` | Debian-based container build |
 | `entrypoint.sh` | User setup and application launch |
-| `unraid-template.xml` | Unraid Community Applications template |
+| `channels-dvr.xml` | Unraid Docker template |
 | `.github/workflows/docker-build.yml` | Monthly rebuilds and manual triggers |
 | `README.md` | User documentation |
 | `CLAUDE.md` | This development log |
