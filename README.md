@@ -168,7 +168,7 @@ sudo systemctl restart docker
 docker run -d \
   --name channels-dvr \
   --net=host \
-  --gpus all \
+  --runtime=nvidia \
   -e PUID=99 \
   -e PGID=100 \
   -e TZ=America/New_York \
@@ -188,6 +188,7 @@ services:
     image: ghcr.io/mackid1993/channels-dvr:latest
     container_name: channels-dvr
     network_mode: host
+    runtime: nvidia
     restart: unless-stopped
     environment:
       - PUID=99
@@ -198,11 +199,6 @@ services:
     volumes:
       - /path/to/config:/channels-dvr
       - /path/to/recordings:/shares/DVR
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - capabilities: [gpu]
 ```
 
 #### Verify NVIDIA is Working
