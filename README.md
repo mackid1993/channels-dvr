@@ -1,15 +1,39 @@
 # Channels DVR Docker Container
 
-A Debian-based Docker container for [Channels DVR](https://getchannels.com/) with hardware transcoding support.
+An unofficial Debian-based Docker container for [Channels DVR](https://getchannels.com/) with correct Unraid file permissions and monthly base image updates.
+
+## Why This Container
+
+- **Correct file permissions** — PUID/PGID mapping + `umask 0000` so you can delete recordings via Windows SMB shares
+- **Monthly rebuilds** — Fresh Debian base with latest security patches (rebuilds on the 1st of each month)
+- **No Docker update hassle** — The Channels DVR app updates itself; the container just provides a stable environment
 
 ## Features
 
-- **Debian glibc base** — Stable base image
-- **PUID/PGID support** — Proper user mapping for Unraid and other systems
+- **PUID/PGID support** — Proper user mapping for Unraid (no root-owned files)
+- **Monthly base image updates** — Automatic rebuilds keep dependencies current
 - **TV Everywhere (TVE)** — Google Chrome for TVE authentication
 - **Intel QuickSync** — Hardware transcoding support
 - **NVIDIA GPU** — Support via nvidia-container-toolkit
 - **Auto-updates** — App handles its own updates (including pre-releases)
+
+## Unraid Installation
+
+### Using the Template File
+
+1. Download [`channels-dvr.xml`](channels-dvr.xml) from this repo
+2. Save it to `/boot/config/plugins/dockerMan/templates/channels-dvr.xml` on your Unraid server
+3. Go to **Docker** tab → **Add Container**
+4. Select "channels-dvr" from the template dropdown
+5. Adjust paths and click **Apply**
+
+### Manual Setup
+
+1. Go to Docker tab → Add Container
+2. Configure manually:
+   - Repository: `ghcr.io/mackid1993/channels-dvr:latest`
+   - Network: `host`
+   - Add path mappings and environment variables as shown below
 
 ## Quick Start
 
@@ -95,15 +119,6 @@ deploy:
       devices:
         - capabilities: [gpu]
 ```
-
-## Unraid Installation
-
-1. Go to Docker tab
-2. Add Container
-3. Use template URL or manually configure:
-   - Repository: `ghcr.io/mackid1993/channels-dvr:latest`
-   - Network: `host`
-   - Add path mappings and environment variables as shown above
 
 ## Ports
 
