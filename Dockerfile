@@ -43,7 +43,7 @@ RUN curl -fsSL https://dl-ssl.google.com/linux/linux_signing_key.pub | \
 # Install Intel GPU drivers for QuickSync
 RUN wget -qO - https://repositories.intel.com/gpu/intel-graphics.key | \
     gpg --dearmor -o /usr/share/keyrings/intel-graphics.gpg && \
-    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/intel-graphics.gpg] https://repositories.intel.com/gpu/ubuntu jammy unified" > \
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/intel-graphics.gpg] https://repositories.intel.com/gpu/debian bookworm unified" > \
     /etc/apt/sources.list.d/intel-gpu.list && \
     apt-get update && apt-get install -y --no-install-recommends \
     intel-media-va-driver-non-free libmfx-gen1 libvpl2 && \
@@ -64,4 +64,3 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 VOLUME ["/channels-dvr", "/shares/DVR"]
 
 ENTRYPOINT ["/usr/bin/tini", "--", "/entrypoint.sh"]
-CMD ["/channels-dvr/latest/channels-dvr"]
