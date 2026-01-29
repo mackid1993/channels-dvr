@@ -16,9 +16,18 @@ Based on Debian Bookworm with minimal tini init system.&#xD;
 Key Features:&#xD;
 - Proper PUID/PGID mapping (no root-owned files)&#xD;
 - TV Everywhere (TVE) support with Google Chrome&#xD;
-- Intel QuickSync hardware transcoding (pass /dev/dri)&#xD;
-- NVIDIA GPU support (set NVIDIA_VISIBLE_DEVICES=all in Advanced settings)&#xD;
-- App handles its own updates (including pre-releases)</Overview>
+- Intel QuickSync and NVIDIA GPU transcoding&#xD;
+- App handles its own updates (including pre-releases)&#xD;
+&#xD;
+GPU Setup:&#xD;
+&#xD;
+Intel QuickSync: The /dev/dri device is already mapped. Just ensure your Intel GPU is available.&#xD;
+&#xD;
+NVIDIA GPU:&#xD;
+1. Install Nvidia-Driver plugin from Community Apps&#xD;
+2. Edit this container, add --gpus all to Extra Parameters&#xD;
+3. In Advanced View, set NVIDIA Visible Devices to: all&#xD;
+4. Apply and verify with: docker exec channels-dvr nvidia-smi</Overview>
   <Category>MediaServer:Video</Category>
   <WebUI>http://[IP]:8089</WebUI>
   <TemplateURL/>

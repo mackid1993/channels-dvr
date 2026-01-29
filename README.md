@@ -105,21 +105,89 @@ Pass through the Intel GPU:
 
 ### NVIDIA GPU
 
-Use nvidia-container-toolkit:
+#### Prerequisites
+
+Install the NVIDIA Container Toolkit on your host:
 
 ```bash
-docker run --gpus all ...
+# Debian/Ubuntu
+curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
+  sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+  sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+sudo apt-get update && sudo apt-get install -y nvidia-container-toolkit
+sudo nvidia-ctk runtime configure --runtime=docker
+sudo systemctl restart docker
 ```
 
-Or with docker-compose:
+#### Unraid
+
+1. Install the **Nvidia-Driver** plugin from Community Applications:
+   - Go to **Apps** tab → search for "Nvidia-Driver" → Install
+   - After installation, go to **Settings** → **Nvidia Driver**
+   - Ensure the driver version matches your GPU and click **Apply**
+   - Reboot if prompted
+
+2. Configure the container for NVIDIA:
+   - Go to **Docker** tab → click on the channels-dvr container → **Edit**
+   - Scroll down to **Extra Parameters** and add: `--gpus all`
+   - In **Advanced View**, set **NVIDIA Visible Devices** to `all`
+   - Click **Apply**
+
+3. Verify it's working:
+   - Click on the channels-dvr container icon → **Console**
+   - Run `nvidia-smi` — you should see your GPU listed
+
+#### Docker Run
+
+```bash
+docker run -d \
+  --name channels-dvr \
+  --net=host \
+  --gpus all \
+  -e PUID=99 \
+  -e PGID=100 \
+  -e TZ=America/New_York \
+  -e NVIDIA_VISIBLE_DEVICES=all \
+  -e NVIDIA_DRIVER_CAPABILITIES=compute,video,utility \
+  -v /path/to/config:/channels-dvr \
+  -v /path/to/recordings:/shares/DVR \
+  ghcr.io/mackid1993/channels-dvr:latest
+```
+
+#### Docker Compose
 
 ```yaml
-deploy:
-  resources:
-    reservations:
-      devices:
-        - capabilities: [gpu]
+version: "3.8"
+services:
+  channels-dvr:
+    image: ghcr.io/mackid1993/channels-dvr:latest
+    container_name: channels-dvr
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      - PUID=99
+      - PGID=100
+      - TZ=America/New_York
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
+    volumes:
+      - /path/to/config:/channels-dvr
+      - /path/to/recordings:/shares/DVR
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
 ```
+
+#### Verify NVIDIA is Working
+
+```bash
+docker exec channels-dvr nvidia-smi
+```
+
+You should see your GPU listed. In the Channels DVR web UI, go to **Settings** → **Transcoding** and select your NVIDIA GPU.
 
 ## Ports
 
