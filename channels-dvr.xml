@@ -9,46 +9,49 @@
   <Privileged>false</Privileged>
   <Support/>
   <Project>https://getchannels.com/</Project>
-  <Overview>Channels DVR Server for Unraid.&#xD;
-&#xD;
-Based on Debian Bookworm with minimal tini init system.&#xD;
-&#xD;
-Key Features:&#xD;
-- Proper PUID/PGID mapping (no root-owned files)&#xD;
-- TV Everywhere (TVE) support with Google Chrome&#xD;
-- Intel QuickSync and NVIDIA GPU transcoding&#xD;
-- App handles its own updates (including pre-releases)&#xD;
-&#xD;
-GPU Setup:&#xD;
-&#xD;
-Intel QuickSync:&#xD;
-1. Edit this container, scroll to Intel GPU (in Advanced View)&#xD;
-2. Set the value to: /dev/dri&#xD;
-3. Apply&#xD;
-&#xD;
-NVIDIA GPU:&#xD;
-1. Install Nvidia-Driver plugin from Community Apps&#xD;
-2. Edit this container, add --runtime=nvidia to Extra Parameters&#xD;
-3. In Advanced View, set NVIDIA Visible Devices to: all&#xD;
+  <ReadMe/>
+  <Overview>Unoffical Channels DVR Docker for Unraid.&#13;
+&#13;
+Based on Debian Bookworm with minimal tini init system.&#13;
+&#13;
+Key Features:&#13;
+- Proper PUID/PGID mapping (no root-owned files)&#13;
+- TV Everywhere (TVE) support with Google Chrome&#13;
+- Intel QuickSync and NVIDIA GPU transcoding&#13;
+- App handles its own updates like the official container (including pre-releases)&#13;
+- Automated container rebuilds on the 1st of every month for security patches.&#13;
+&#13;
+GPU Setup:&#13;
+&#13;
+Intel QuickSync:&#13;
+1. Edit this container, scroll to Intel GPU (in Advanced View)&#13;
+2. Set the value to: /dev/dri&#13;
+3. Apply&#13;
+&#13;
+NVIDIA GPU:&#13;
+1. Install Nvidia-Driver plugin from Community Apps&#13;
+2. Edit this container, add --runtime=nvidia to Extra Parameters&#13;
+3. In Advanced View, set NVIDIA Visible Devices to: all&#13;
 4. Apply and verify with: docker exec channels-dvr nvidia-smi</Overview>
   <Category>MediaServer:Video</Category>
   <WebUI>http://[IP]:8089</WebUI>
   <TemplateURL/>
-  <Icon>https://raw.githubusercontent.com/mackid1993/channels-dvr/refs/heads/main/channels-dvr.png</Icon>
-  <ExtraParams></ExtraParams>
+  <Icon>https://raw.githubusercontent.com/mackid1993/unraid-templates/refs/heads/main/ChannelsDVR/channels-dvr.png</Icon>
+  <ExtraParams/>
   <PostArgs/>
   <CPUset/>
-  <DateInstalled></DateInstalled>
+  <DateInstalled>1769714716</DateInstalled>
   <DonateText/>
   <DonateLink/>
   <Requires/>
   <Config Name="Config Storage" Target="/channels-dvr" Default="/mnt/user/appdata/channels-dvr" Mode="rw" Description="Container Path: /channels-dvr - Stores Channels DVR configuration and binary" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/channels-dvr</Config>
-  <Config Name="Recordings" Target="/shares/DVR" Default="/mnt/user/data/DVR" Mode="rw" Description="Container Path: /shares/DVR - Where recordings are stored" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/data/DVR</Config>
+  <Config Name="Recordings" Target="/shares/DVR" Default="" Mode="rw" Description="Container Path: /shares/DVR - Where recordings are stored" Type="Path" Display="always" Required="true" Mask="false"/>
   <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="User ID - Use 99 for nobody on Unraid" Type="Variable" Display="always" Required="false" Mask="false">99</Config>
   <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Group ID - Use 100 for users on Unraid" Type="Variable" Display="always" Required="false" Mask="false">100</Config>
-  <Config Name="Timezone" Target="TZ" Default="America/New_York" Mode="" Description="Timezone" Type="Variable" Display="always" Required="false" Mask="false">America/New_York</Config>
+  <Config Name="Timezone" Target="TZ" Default="America/New_York" Mode="" Description="Timezone - Set to your timezone." Type="Variable" Display="always" Required="false" Mask="false">America/New_York</Config>
   <Config Name="UMASK" Target="UMASK" Default="0000" Mode="" Description="File permission mask. Default 0000 allows SMB file deletion. Use 0022 for standard permissions (755/644)." Type="Variable" Display="advanced" Required="false" Mask="false">0000</Config>
-  <Config Name="Intel GPU" Target="" Default="" Mode="" Description="For Intel QuickSync hardware transcoding, set this to: /dev/dri" Type="Device" Display="advanced" Required="false" Mask="false"></Config>
-  <Config Name="NVIDIA Visible Devices" Target="NVIDIA_VISIBLE_DEVICES" Default="" Mode="" Description="To enable NVIDIA GPU: 1) Install Nvidia-Driver plugin from Community Apps, 2) Add --runtime=nvidia to Extra Parameters above, 3) Set this to: all" Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+  <Config Name="Intel GPU" Target="" Default="" Mode="" Description="For Intel QuickSync hardware transcoding, set this to: /dev/dri" Type="Device" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="NVIDIA Visible Devices" Target="NVIDIA_VISIBLE_DEVICES" Default="" Mode="" Description="To enable NVIDIA GPU: 1) Install Nvidia-Driver plugin from Community Apps, 2) Add --runtime=nvidia to Extra Parameters above, 3) Set this to: all" Type="Variable" Display="advanced" Required="false" Mask="false"/>
   <Config Name="NVIDIA Driver Capabilities" Target="NVIDIA_DRIVER_CAPABILITIES" Default="compute,video,utility" Mode="" Description="Leave as default (compute,video,utility) for transcoding. Only change if you know what you're doing." Type="Variable" Display="advanced" Required="false" Mask="false">compute,video,utility</Config>
+  <TailscaleStateDir/>
 </Container>
