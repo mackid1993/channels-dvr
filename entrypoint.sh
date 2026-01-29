@@ -17,17 +17,28 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 # Ensure group exists with correct GID
 groupadd -o -g "$PGID" channels 2>/dev/null || groupmod -g "$PGID" channels 2>/dev/null || true
 
-# Create user if it doesn't exist
+# Create or update user
 if ! getent passwd channels > /dev/null 2>&1; then
+    echo "Creating user channels with UID=$PUID GID=$PGID"
     useradd -o -u "$PUID" -g "$PGID" -d /channels-dvr -s /bin/bash channels >/dev/null 2>&1
 else
-    usermod -o -u "$PUID" -g "$PGID" channels >/dev/null 2>&1 || true
+    CURRENT_UID=$(id -u channels 2>/dev/null || echo "")
+    CURRENT_GID=$(id -g channels 2>/dev/null || echo "")
+    if [ "$CURRENT_UID" != "$PUID" ] || [ "$CURRENT_GID" != "$PGID" ]; then
+        echo "Updating user channels: UID $CURRENT_UID->$PUID GID $CURRENT_GID->$PGID"
+        usermod -o -u "$PUID" -g "$PGID" channels >/dev/null 2>&1 || true
+    fi
 fi
 
 # Set ownership of directories (top-level only, no recursive scan)
 mkdir -p /channels-dvr/data
-chown channels:channels /channels-dvr /channels-dvr/data 2>/dev/null || true
-chown channels:channels /shares/DVR 2>/dev/null || true
+CURRENT_UID=$(stat -c %u /channels-dvr/data 2>/dev/null || echo "")
+CURRENT_GID=$(stat -c %g /channels-dvr/data 2>/dev/null || echo "")
+if [ "$CURRENT_UID" != "$PUID" ] || [ "$CURRENT_GID" != "$PGID" ]; then
+    echo "Setting permissions..."
+    chown channels:channels /channels-dvr /channels-dvr/data 2>/dev/null || true
+    chown channels:channels /shares/DVR 2>/dev/null || true
+fi
 
 # Download Channels DVR if not present (first run only)
 if [ ! -f /channels-dvr/latest/channels-dvr ]; then
