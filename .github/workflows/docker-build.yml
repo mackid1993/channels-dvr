@@ -38,9 +38,15 @@ jobs:
         id: version
         run: |
           VERSION=$(date +'%Y.%m.%d')-${{ github.run_number }}
+          BUILD_DATE=${{ github.event.head_commit.timestamp }}
+          if [ -z "$BUILD_DATE" ]; then
+            BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          fi
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "build_date=${BUILD_DATE}" >> $GITHUB_OUTPUT
           echo "image_name=${IMAGE_NAME,,}" >> $GITHUB_OUTPUT
           echo "Generated version: ${VERSION}"
+          echo "Build date: ${BUILD_DATE}"
 
       - name: Extract metadata
         id: meta
@@ -60,10 +66,10 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           build-args: |
             VERSION=${{ steps.version.outputs.version }}
-            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            BUILD_DATE=${{ steps.version.outputs.build_date }}
           labels: |
             org.opencontainers.image.version=${{ steps.version.outputs.version }}
-            org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
+            org.opencontainers.image.created=${{ steps.version.outputs.build_date }}
             org.opencontainers.image.revision=${{ github.sha }}
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ steps.version.outputs.image_name }}:buildcache
           cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ steps.version.outputs.image_name }}:buildcache,mode=max
