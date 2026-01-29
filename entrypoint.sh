@@ -77,8 +77,8 @@ echo "  Starting Channels DVR Server"
 echo "  Web UI: http://${SERVER_IP:-localhost}:8089"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Set permissive umask for Unraid SMB compatibility (files 666, dirs 777)
-umask 0000
+# Set umask (default 0000 for Unraid SMB compatibility)
+umask "${UMASK:-0000}"
 
 # Run DVR from data directory (matching official FancyBits layout)
 cd /channels-dvr/data
