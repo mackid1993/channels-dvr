@@ -41,13 +41,18 @@ if [ "$CURRENT_UID" != "$PUID" ] || [ "$CURRENT_GID" != "$PGID" ]; then
 fi
 
 # Verify write access
+WRITE_OK=true
 for dir in /channels-dvr /channels-dvr/data /shares/DVR; do
-    if [ -d "$dir" ] && ! gosu channels touch "$dir/.write_test" 2>/dev/null; then
-        echo "WARNING: Cannot write to $dir (check PUID/PGID)"
-    else
-        rm -f "$dir/.write_test" 2>/dev/null
+    if [ -d "$dir" ]; then
+        if gosu channels touch "$dir/.write_test" 2>/dev/null; then
+            rm -f "$dir/.write_test"
+        else
+            echo "WARNING: Cannot write to $dir (check PUID/PGID)"
+            WRITE_OK=false
+        fi
     fi
 done
+$WRITE_OK && echo "Permissions OK"
 
 # Download Channels DVR if not present (first run only)
 if [ ! -f /channels-dvr/latest/channels-dvr ]; then
