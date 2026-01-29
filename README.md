@@ -108,24 +108,36 @@ Hardware transcoding is not enabled by default. Add GPU support only if you need
 
 #### Docker Run
 
-Add the device flag:
-
 ```bash
 docker run -d \
   --name channels-dvr \
   --net=host \
   --device /dev/dri:/dev/dri \
-  ...
+  -e PUID=99 \
+  -e PGID=100 \
+  -e TZ=America/New_York \
+  -v /path/to/config:/channels-dvr \
+  -v /path/to/recordings:/shares/DVR \
+  ghcr.io/mackid1993/channels-dvr:latest
 ```
 
 #### Docker Compose
 
-Add the devices section:
-
 ```yaml
+version: "3.8"
 services:
   channels-dvr:
-    ...
+    image: ghcr.io/mackid1993/channels-dvr:latest
+    container_name: channels-dvr
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      - PUID=99
+      - PGID=100
+      - TZ=America/New_York
+    volumes:
+      - /path/to/config:/channels-dvr
+      - /path/to/recordings:/shares/DVR
     devices:
       - /dev/dri:/dev/dri
 ```
