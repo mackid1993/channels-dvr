@@ -27,7 +27,7 @@ ENV NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
 
 # Install tini and core dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    tini curl ca-certificates wget gnupg ffmpeg gosu \
+    tini curl ca-certificates gnupg ffmpeg gosu \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Google Chrome for TVE
@@ -50,6 +50,8 @@ RUN sed -i 's/^Components: main$/Components: main contrib non-free non-free-firm
 # Create directories
 RUN mkdir -p /channels-dvr/data /shares/DVR
 
+WORKDIR /channels-dvr
+
 # Copy entrypoint script
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
@@ -57,7 +59,7 @@ RUN chmod +x /entrypoint.sh
 EXPOSE 8089/tcp 1900/udp 5353/udp
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:8089/ || exit 1
+    CMD sh -c 'curl -f http://localhost:${CHANNELS_PORT:-8089}/ || exit 1'
 
 VOLUME ["/channels-dvr", "/shares/DVR"]
 

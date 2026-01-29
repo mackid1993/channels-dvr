@@ -31,7 +31,8 @@ fi
 # Set ownership of directories
 echo "Setting permissions..."
 mkdir -p /channels-dvr/data
-chown -R channels:channels /channels-dvr
+chown channels:channels /channels-dvr
+chown -R channels:channels /channels-dvr/data 2>/dev/null || true
 chown channels:channels /shares/DVR 2>/dev/null || true
 
 # Download Channels DVR if not present (first run only)
@@ -53,11 +54,13 @@ fi
 # Check for Intel GPU
 if [ -e /dev/dri ]; then
     echo "Intel GPU detected at /dev/dri"
+    usermod -aG video,render channels 2>/dev/null || true
 fi
 
 # Check for NVIDIA GPU
-if command -v nvidia-smi &> /dev/null; then
+if [ -e /dev/nvidia0 ]; then
     echo "NVIDIA GPU detected"
+    usermod -aG video channels 2>/dev/null || true
 fi
 
 # Build DVR arguments (matching official FancyBits run.sh)
