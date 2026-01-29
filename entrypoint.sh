@@ -61,12 +61,12 @@ if command -v nvidia-smi &> /dev/null; then
 fi
 
 # Build DVR arguments (matching official FancyBits run.sh)
-DVR_ARGS="-dir /channels-dvr/data"
+DVR_ARGS=(-dir /channels-dvr/data)
 if [ -n "$CHANNELS_HOST" ]; then
-    DVR_ARGS="$DVR_ARGS -host $CHANNELS_HOST"
+    DVR_ARGS+=(-host "$CHANNELS_HOST")
 fi
 if [ -n "$CHANNELS_PORT" ]; then
-    DVR_ARGS="$DVR_ARGS -port $CHANNELS_PORT"
+    DVR_ARGS+=(-port "$CHANNELS_PORT")
 fi
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -74,18 +74,9 @@ echo "  Starting Channels DVR Server"
 echo "  Web UI: http://localhost:8089"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Disable set -e for signal handling (wait returns non-zero on signal)
-set +e
-
-# Forward shutdown signal to DVR
-trap 'kill -TERM "$DVR_PID" 2>/dev/null' SIGTERM SIGINT
-
 # Set permissive umask for Unraid SMB compatibility (files 666, dirs 777)
 umask 0000
 
 # Run DVR from data directory (matching official FancyBits layout)
 cd /channels-dvr/data
-gosu channels ../latest/channels-dvr $DVR_ARGS &
-DVR_PID=$!
-wait "$DVR_PID"
-exit $?
+exec gosu channels ../latest/channels-dvr "${DVR_ARGS[@]}"
