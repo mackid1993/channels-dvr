@@ -23,7 +23,7 @@ fi
 
 # Create user if it doesn't exist
 if ! getent passwd channels > /dev/null 2>&1; then
-    useradd -o -u "$PUID" -g "$PGID" -d /channels-dvr -s /bin/bash channels
+    useradd -o -u "$PUID" -g "$PGID" -d /channels-dvr -s /bin/bash channels 2>/dev/null
 else
     usermod -o -u "$PUID" -g "$PGID" channels 2>/dev/null || true
 fi
