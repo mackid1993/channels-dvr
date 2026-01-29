@@ -28,10 +28,12 @@ else
     usermod -o -u "$PUID" -g "$PGID" channels 2>/dev/null || true
 fi
 
-# Create directories and set ownership only on first run
+# Create directories and set ownership only on first run or PUID/PGID change
 mkdir -p /channels-dvr/data
-if [ ! -f /channels-dvr/data/.initialized ]; then
-    echo "First run detected, setting permissions..."
+CURRENT_UID=$(stat -c %u /channels-dvr/data 2>/dev/null || echo "")
+CURRENT_GID=$(stat -c %g /channels-dvr/data 2>/dev/null || echo "")
+if [ ! -f /channels-dvr/data/.initialized ] || [ "$CURRENT_UID" != "$PUID" ] || [ "$CURRENT_GID" != "$PGID" ]; then
+    echo "Setting permissions (first run or PUID/PGID change detected)..."
     chown channels:channels /channels-dvr /channels-dvr/data 2>/dev/null || true
     chown channels:channels /shares/DVR 2>/dev/null || true
     touch /channels-dvr/data/.initialized
