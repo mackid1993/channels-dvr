@@ -249,4 +249,4 @@ docker build -t channels-dvr .
 
 ## License
 
-This Docker image is provided as-is. Channels DVR is a commercial product — see [getchannels.com](https://getchannels.com/) for licensing. This is an unofficial container and not supported by Fancy Bits LLC.
+This Docker image is provided as-is. Channels DVR is a commercial product — see [getchannels.com](https://getchannels.com/) for licensing. This is an unofficial container and not supported or endorsed by Fancy Bits LLC.
