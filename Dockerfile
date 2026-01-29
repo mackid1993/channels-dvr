@@ -26,7 +26,7 @@ ENV NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
 
 # Install tini and core dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    tini curl ca-certificates wget gnupg xvfb ffmpeg iproute2 gosu \
+    tini curl ca-certificates wget gnupg ffmpeg gosu \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Google Chrome for TVE

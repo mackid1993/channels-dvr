@@ -61,12 +61,12 @@ if command -v nvidia-smi &> /dev/null; then
 fi
 
 # Build DVR arguments (matching official FancyBits run.sh)
-DVR_ARGS="-dir /channels-dvr/data"
+DVR_ARGS=(-dir /channels-dvr/data)
 if [ -n "$CHANNELS_HOST" ]; then
-    DVR_ARGS="$DVR_ARGS -host $CHANNELS_HOST"
+    DVR_ARGS+=(-host "$CHANNELS_HOST")
 fi
 if [ -n "$CHANNELS_PORT" ]; then
-    DVR_ARGS="$DVR_ARGS -port $CHANNELS_PORT"
+    DVR_ARGS+=(-port "$CHANNELS_PORT")
 fi
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -79,4 +79,4 @@ umask 0000
 
 # Run DVR from data directory (matching official FancyBits layout)
 cd /channels-dvr/data
-exec gosu channels ../latest/channels-dvr $DVR_ARGS
+exec gosu channels ../latest/channels-dvr "${DVR_ARGS[@]}"
