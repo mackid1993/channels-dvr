@@ -28,7 +28,7 @@ Intel QuickSync:&#xD;
 &#xD;
 NVIDIA GPU:&#xD;
 1. Install Nvidia-Driver plugin from Community Apps&#xD;
-2. Edit this container, add --gpus all to Extra Parameters&#xD;
+2. Edit this container, add --runtime=nvidia to Extra Parameters&#xD;
 3. In Advanced View, set NVIDIA Visible Devices to: all&#xD;
 4. Apply and verify with: docker exec channels-dvr nvidia-smi</Overview>
   <Category>MediaServer:Video</Category>
@@ -48,6 +48,6 @@ NVIDIA GPU:&#xD;
   <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Group ID - Use 100 for users on Unraid" Type="Variable" Display="always" Required="false" Mask="false">100</Config>
   <Config Name="Timezone" Target="TZ" Default="America/New_York" Mode="" Description="Timezone" Type="Variable" Display="always" Required="false" Mask="false">America/New_York</Config>
   <Config Name="Intel GPU" Target="" Default="" Mode="" Description="For Intel QuickSync hardware transcoding, set this to: /dev/dri" Type="Device" Display="advanced" Required="false" Mask="false"></Config>
-  <Config Name="NVIDIA Visible Devices" Target="NVIDIA_VISIBLE_DEVICES" Default="" Mode="" Description="To enable NVIDIA GPU: 1) Install Nvidia-Driver plugin from Community Apps, 2) Add --gpus all to Extra Parameters above, 3) Set this to: all" Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+  <Config Name="NVIDIA Visible Devices" Target="NVIDIA_VISIBLE_DEVICES" Default="" Mode="" Description="To enable NVIDIA GPU: 1) Install Nvidia-Driver plugin from Community Apps, 2) Add --runtime=nvidia to Extra Parameters above, 3) Set this to: all" Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
   <Config Name="NVIDIA Driver Capabilities" Target="NVIDIA_DRIVER_CAPABILITIES" Default="compute,video,utility" Mode="" Description="Leave as default (compute,video,utility) for transcoding. Only change if you know what you're doing." Type="Variable" Display="advanced" Required="false" Mask="false">compute,video,utility</Config>
 </Container>
