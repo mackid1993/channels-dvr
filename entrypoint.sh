@@ -69,9 +69,12 @@ if [ -n "$CHANNELS_PORT" ]; then
     DVR_ARGS+=(-port "$CHANNELS_PORT")
 fi
 
+# Get server IP address
+SERVER_IP=$(hostname -I | awk '{print $1}')
+
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  Starting Channels DVR Server"
-echo "  Web UI: http://localhost:8089"
+echo "  Web UI: http://${SERVER_IP:-localhost}:8089"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # Set permissive umask for Unraid SMB compatibility (files 666, dirs 777)
