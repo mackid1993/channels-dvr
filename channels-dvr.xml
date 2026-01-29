@@ -21,7 +21,10 @@ Key Features:&#xD;
 &#xD;
 GPU Setup:&#xD;
 &#xD;
-Intel QuickSync: The /dev/dri device is already mapped. Just ensure your Intel GPU is available.&#xD;
+Intel QuickSync:&#xD;
+1. Edit this container, click Add another Path, Port, Variable, Label or Device&#xD;
+2. Set Config Type to Device, Name to Intel GPU, Value to /dev/dri&#xD;
+3. Apply&#xD;
 &#xD;
 NVIDIA GPU:&#xD;
 1. Install Nvidia-Driver plugin from Community Apps&#xD;
@@ -44,7 +47,6 @@ NVIDIA GPU:&#xD;
   <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="User ID - Use 99 for nobody on Unraid" Type="Variable" Display="always" Required="false" Mask="false">99</Config>
   <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Group ID - Use 100 for users on Unraid" Type="Variable" Display="always" Required="false" Mask="false">100</Config>
   <Config Name="Timezone" Target="TZ" Default="America/New_York" Mode="" Description="Timezone" Type="Variable" Display="always" Required="false" Mask="false">America/New_York</Config>
-  <Config Name="Intel GPU" Target="/dev/dri" Default="/dev/dri" Mode="" Description="Intel GPU for hardware transcoding" Type="Device" Display="always" Required="false" Mask="false">/dev/dri</Config>
   <Config Name="NVIDIA Visible Devices" Target="NVIDIA_VISIBLE_DEVICES" Default="" Mode="" Description="NVIDIA GPUs to use. Set to 'all' for all GPUs, or specific GPU ID like '0'. Leave empty to disable NVIDIA. Requires Unraid NVIDIA plugin." Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
   <Config Name="NVIDIA Driver Capabilities" Target="NVIDIA_DRIVER_CAPABILITIES" Default="compute,video,utility" Mode="" Description="NVIDIA capabilities: compute, video, utility, graphics. Default handles transcoding." Type="Variable" Display="advanced" Required="false" Mask="false">compute,video,utility</Config>
 </Container>
