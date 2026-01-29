@@ -40,6 +40,13 @@ if [ "$CURRENT_UID" != "$PUID" ] || [ "$CURRENT_GID" != "$PGID" ]; then
     chown channels:channels /shares/DVR 2>/dev/null || true
 fi
 
+# Verify write access
+if ! gosu channels touch /channels-dvr/data/.write_test 2>/dev/null; then
+    echo "WARNING: Cannot write to /channels-dvr/data (check PUID/PGID)"
+else
+    rm -f /channels-dvr/data/.write_test
+fi
+
 # Download Channels DVR if not present (first run only)
 if [ ! -f /channels-dvr/latest/channels-dvr ]; then
     echo "Channels DVR not found, downloading..."
