@@ -19,6 +19,7 @@ LABEL org.opencontainers.image.created="${BUILD_DATE}"
 
 ENV PUID=99
 ENV PGID=100
+ENV UMASK=0000
 ENV TZ=America/New_York
 # NVIDIA GPU support (requires --runtime=nvidia or --gpus all)
 ENV NVIDIA_VISIBLE_DEVICES=

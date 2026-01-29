@@ -75,6 +75,7 @@ services:
 |----------|---------|-------------|
 | `PUID` | 99 | User ID for file permissions (99 = nobody on Unraid) |
 | `PGID` | 100 | Group ID for file permissions (100 = users on Unraid) |
+| `UMASK` | 0000 | File permission mask (0000 = 777/666 for SMB compatibility) |
 | `TZ` | America/New_York | Timezone for scheduling |
 
 **Note for non-Unraid systems:** The defaults (99/100) are Unraid-specific. On other Linux systems, find your user's IDs with:
