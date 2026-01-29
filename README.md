@@ -122,7 +122,23 @@ sudo systemctl restart docker
 
 #### Unraid
 
-Install the **Nvidia-Driver** plugin from Community Applications. After installation, go to **Settings** → **Nvidia Driver** and ensure the driver is loaded.
+1. Install the **Nvidia-Driver** plugin from Community Applications:
+   - Go to **Apps** tab → search for "Nvidia-Driver" → Install
+   - After installation, go to **Settings** → **Nvidia Driver**
+   - Ensure the driver version matches your GPU and click **Apply**
+   - Reboot if prompted
+
+2. Configure the container for NVIDIA:
+   - Go to **Docker** tab → click on the channels-dvr container → **Edit**
+   - Scroll down to **Extra Parameters** and add: `--gpus all`
+   - Add these environment variables (click **Add another Path, Port, Variable, Label or Device**):
+     - **Variable**: `NVIDIA_VISIBLE_DEVICES` = `all`
+     - **Variable**: `NVIDIA_DRIVER_CAPABILITIES` = `compute,video,utility`
+   - Click **Apply**
+
+3. Verify it's working:
+   - Click on the channels-dvr container icon → **Console**
+   - Run `nvidia-smi` — you should see your GPU listed
 
 #### Docker Run
 
