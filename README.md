@@ -123,11 +123,9 @@ services:
 #### Unraid
 
 1. Edit the container
-2. Click **Add another Path, Port, Variable, Label or Device**
-3. Set **Config Type** to `Device`
-4. Set **Name** to `Intel GPU`
-5. Set **Value** to `/dev/dri`
-6. Click **Apply**
+2. In **Advanced View**, find the **Intel GPU** field
+3. Set the value to `/dev/dri`
+4. Click **Apply**
 
 ### NVIDIA GPU
 
