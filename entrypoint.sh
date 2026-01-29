@@ -17,18 +17,40 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 # Ensure group exists with correct GID
 groupadd -o -g "$PGID" channels 2>/dev/null || groupmod -g "$PGID" channels 2>/dev/null || true
 
-# Create user if it doesn't exist
+# Create or update user
 if ! getent passwd channels > /dev/null 2>&1; then
-    useradd -o -u "$PUID" -g "$PGID" -d /channels-dvr -s /bin/bash channels 2>/dev/null
+    echo "Creating user channels with UID=$PUID GID=$PGID"
+    useradd -o -u "$PUID" -g "$PGID" -d /channels-dvr -s /bin/bash channels >/dev/null 2>&1
 else
-    usermod -o -u "$PUID" -g "$PGID" channels 2>/dev/null || true
+    CURRENT_UID=$(id -u channels 2>/dev/null || echo "")
+    CURRENT_GID=$(id -g channels 2>/dev/null || echo "")
+    if [ "$CURRENT_UID" != "$PUID" ] || [ "$CURRENT_GID" != "$PGID" ]; then
+        echo "Updating user channels: UID $CURRENT_UID->$PUID GID $CURRENT_GID->$PGID"
+        usermod -o -u "$PUID" -g "$PGID" channels >/dev/null 2>&1 || true
+    fi
 fi
 
 # Set ownership of directories (top-level only, no recursive scan)
-echo "Setting permissions..."
 mkdir -p /channels-dvr/data
-chown channels:channels /channels-dvr /channels-dvr/data 2>/dev/null || true
-chown channels:channels /shares/DVR 2>/dev/null || true
+CURRENT_UID=$(stat -c %u /channels-dvr/data 2>/dev/null || echo "")
+CURRENT_GID=$(stat -c %g /channels-dvr/data 2>/dev/null || echo "")
+if [ "$CURRENT_UID" != "$PUID" ] || [ "$CURRENT_GID" != "$PGID" ]; then
+    echo "Setting permissions..."
+    chown channels:channels /channels-dvr /channels-dvr/data 2>/dev/null || true
+    chown channels:channels /shares/DVR 2>/dev/null || true
+fi
+
+# Verify write access
+for dir in /channels-dvr /channels-dvr/data /shares/DVR; do
+    if [ -d "$dir" ]; then
+        if gosu channels touch "$dir/.write_test" 2>/dev/null; then
+            rm -f "$dir/.write_test"
+            echo "Write OK: $dir"
+        else
+            echo "WARNING: Cannot write to $dir (check PUID/PGID)"
+        fi
+    fi
+done
 
 # Download Channels DVR if not present (first run only)
 if [ ! -f /channels-dvr/latest/channels-dvr ]; then
