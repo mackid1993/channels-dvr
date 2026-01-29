@@ -1,6 +1,6 @@
 # Channels DVR Docker Container
 
-An unofficial Debian-based Docker container for [Channels DVR](https://getchannels.com/) with correct Unraid file permissions and monthly base image updates.
+An unofficial Debian-based Docker container for [Channels DVR](https://getchannels.com/) with proper file permissions and monthly base image updates. Optimized for Unraid but works on any Linux system.
 
 ## Why This Container
 
@@ -11,7 +11,7 @@ An unofficial Debian-based Docker container for [Channels DVR](https://getchanne
 
 ## Features
 
-- **PUID/PGID support** — Proper user mapping for Unraid (no root-owned files)
+- **PUID/PGID support** — Proper user mapping for any Linux system (no root-owned files)
 - **Monthly base image updates** — Automatic rebuilds keep dependencies current
 - **TV Everywhere (TVE)** — Google Chrome for TVE authentication
 - **Intel QuickSync** — Hardware transcoding support
@@ -76,6 +76,15 @@ services:
 | `PUID` | 99 | User ID for file permissions (99 = nobody on Unraid) |
 | `PGID` | 100 | Group ID for file permissions (100 = users on Unraid) |
 | `TZ` | America/New_York | Timezone for scheduling |
+
+**Note for non-Unraid systems:** The defaults (99/100) are Unraid-specific. On other Linux systems, find your user's IDs with:
+
+```bash
+id $USER
+# Example output: uid=1000(john) gid=1000(john) ...
+```
+
+Then set `PUID=1000` and `PGID=1000` (or whatever your IDs are).
 
 ### GPU Settings
 
@@ -168,7 +177,7 @@ sudo systemctl restart docker
 docker run -d \
   --name channels-dvr \
   --net=host \
-  --gpus all \
+  --runtime=nvidia \
   -e PUID=99 \
   -e PGID=100 \
   -e TZ=America/New_York \
@@ -188,6 +197,7 @@ services:
     image: ghcr.io/mackid1993/channels-dvr:latest
     container_name: channels-dvr
     network_mode: host
+    runtime: nvidia
     restart: unless-stopped
     environment:
       - PUID=99
@@ -198,11 +208,6 @@ services:
     volumes:
       - /path/to/config:/channels-dvr
       - /path/to/recordings:/shares/DVR
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - capabilities: [gpu]
 ```
 
 #### Verify NVIDIA is Working
