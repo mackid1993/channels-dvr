@@ -25,7 +25,6 @@ else
 fi
 
 # Set ownership of directories (top-level only, no recursive scan)
-echo "Setting permissions..."
 mkdir -p /channels-dvr/data
 chown channels:channels /channels-dvr /channels-dvr/data 2>/dev/null || true
 chown channels:channels /shares/DVR 2>/dev/null || true
