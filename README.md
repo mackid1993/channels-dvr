@@ -47,7 +47,6 @@ docker run -d \
   -e TZ=America/New_York \
   -v /path/to/config:/channels-dvr \
   -v /path/to/recordings:/shares/DVR \
-  --device /dev/dri:/dev/dri \
   ghcr.io/mackid1993/channels-dvr:latest
 ```
 
@@ -68,8 +67,6 @@ services:
     volumes:
       - /path/to/config:/channels-dvr
       - /path/to/recordings:/shares/DVR
-    devices:
-      - /dev/dri:/dev/dri
 ```
 
 ## Environment Variables
@@ -93,15 +90,44 @@ services:
 | `/channels-dvr` | Config directory and Channels DVR binary |
 | `/shares/DVR` | Recordings storage |
 
-## Hardware Transcoding
+## Hardware Transcoding (Optional)
+
+Hardware transcoding is not enabled by default. Add GPU support only if you need it.
 
 ### Intel QuickSync
 
-Pass through the Intel GPU:
+#### Docker Run
+
+Add the device flag:
 
 ```bash
---device /dev/dri:/dev/dri
+docker run -d \
+  --name channels-dvr \
+  --net=host \
+  --device /dev/dri:/dev/dri \
+  ...
 ```
+
+#### Docker Compose
+
+Add the devices section:
+
+```yaml
+services:
+  channels-dvr:
+    ...
+    devices:
+      - /dev/dri:/dev/dri
+```
+
+#### Unraid
+
+1. Edit the container
+2. Click **Add another Path, Port, Variable, Label or Device**
+3. Set **Config Type** to `Device`
+4. Set **Name** to `Intel GPU`
+5. Set **Value** to `/dev/dri`
+6. Click **Apply**
 
 ### NVIDIA GPU
 
