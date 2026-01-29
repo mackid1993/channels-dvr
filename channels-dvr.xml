@@ -7,7 +7,7 @@
   <MyIP/>
   <Shell>bash</Shell>
   <Privileged>false</Privileged>
-  <Support/>
+  <Support>https://community.getchannels.com/t/channels-docker-for-unraid/45551</Support>
   <Project>https://getchannels.com/</Project>
   <ReadMe/>
   <Overview>Unoffical Channels DVR Docker for Unraid.&#13;
@@ -40,7 +40,7 @@ NVIDIA GPU:&#13;
   <ExtraParams/>
   <PostArgs/>
   <CPUset/>
-  <DateInstalled>1769714716</DateInstalled>
+  <DateInstalled>1769714919</DateInstalled>
   <DonateText/>
   <DonateLink/>
   <Requires/>
