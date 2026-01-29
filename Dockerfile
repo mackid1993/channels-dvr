@@ -21,7 +21,7 @@ ENV PUID=99
 ENV PGID=100
 ENV TZ=America/New_York
 # NVIDIA GPU support (requires --runtime=nvidia or --gpus all)
-ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_VISIBLE_DEVICES=
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
 
 # Install tini and core dependencies
