@@ -6,7 +6,8 @@ An unofficial Debian-based Docker container for [Channels DVR](https://getchanne
 
 - **Correct file permissions** — PUID/PGID mapping + `umask 0000` so you can delete recordings via Windows SMB shares
 - **Monthly rebuilds** — Fresh Debian base with latest security patches (rebuilds on the 1st of each month)
-- **No Docker update hassle** — The Channels DVR app updates itself; the container just provides a stable environment
+- **No Docker update hassle** — The Channels DVR app updates itself just like the offical image; the container just provides a stable environment
+- Channels installs from the offical source based off of the offical Linux installer on first launch unless it's already detected
 
 ## Features
 
