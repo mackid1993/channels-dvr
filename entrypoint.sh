@@ -14,9 +14,8 @@ echo "  Channels DVR - Starting"
 echo "  UID: $PUID | GID: $PGID"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Create/recreate group with correct GID
-groupdel channels 2>/dev/null || true
-groupadd -o -g "$PGID" channels
+# Ensure group exists with correct GID
+groupadd -o -g "$PGID" channels 2>/dev/null || groupmod -g "$PGID" channels 2>/dev/null || true
 
 # Create user if it doesn't exist
 if ! getent passwd channels > /dev/null 2>&1; then
