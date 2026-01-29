@@ -19,9 +19,9 @@ groupadd -o -g "$PGID" channels 2>/dev/null || groupmod -g "$PGID" channels 2>/d
 
 # Create user if it doesn't exist
 if ! getent passwd channels > /dev/null 2>&1; then
-    useradd -o -u "$PUID" -g "$PGID" -d /channels-dvr -s /bin/bash channels 2>/dev/null
+    useradd -o -u "$PUID" -g "$PGID" -d /channels-dvr -s /bin/bash channels >/dev/null 2>&1
 else
-    usermod -o -u "$PUID" -g "$PGID" channels 2>/dev/null || true
+    usermod -o -u "$PUID" -g "$PGID" channels >/dev/null 2>&1 || true
 fi
 
 # Set ownership of directories (top-level only, no recursive scan)
