@@ -22,7 +22,7 @@ Key Features:&#xD;
   <Category>MediaServer:Video</Category>
   <WebUI>http://[IP]:8089</WebUI>
   <TemplateURL/>
-  <Icon>https://raw.githubusercontent.com/timstephens24/docker-templates/master/img/channels-logo.png</Icon>
+  <Icon>https://raw.githubusercontent.com/mackid1993/channels-dvr/refs/heads/main/channels-dvr.png</Icon>
   <ExtraParams></ExtraParams>
   <PostArgs/>
   <CPUset/>
