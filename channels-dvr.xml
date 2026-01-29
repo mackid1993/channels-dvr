@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <Container version="2">
-  <Name>channels-dvr</Name>
+  <Name>Channels DVR</Name>
   <Repository>ghcr.io/mackid1993/channels-dvr:latest</Repository>
   <Registry>https://ghcr.io/</Registry>
   <Network>host</Network>
