@@ -1,5 +1,7 @@
 # Channels DVR Docker Container
 
+**FANCY BITS LLC IS NOT AFFILIATED WITH THIS PACKAGE AND WILL *NOT* PROVIDE SUPPORT**
+--
 An unofficial Debian-based Docker container for [Channels DVR](https://getchannels.com/) with proper file permissions and monthly base image updates. Optimized for Unraid but works on any Linux system.
 
 ## Why This Container
