@@ -22,13 +22,7 @@ An unofficial Debian-based Docker container for [Channels DVR](https://getchanne
 
 ## Unraid Installation
 
-### Using the Template File
-
-1. Download [`ChannelsDVR.xml`](ChannelsDVR.xml) from this repo
-2. Save it to `/boot/config/plugins/dockerMan/templates/channels-dvr.xml` on your Unraid server
-3. Go to **Docker** tab → **Add Container**
-4. Select "ChannelsDVR" from the template dropdown
-5. Adjust paths and click **Apply**
+- Install from Community Applications and follow the instructions in the template.
 
 ### Manual Setup
 
