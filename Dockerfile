@@ -11,7 +11,7 @@
 # NOTE: this freezes the base LAYER (glibc/base libs). The apt-get installs below still
 # pull CURRENT package versions (e.g. ffmpeg) unless the apt sources are also pinned to a
 # snapshot — see snapshot.debian.org if you want to freeze those too.
-FROM --platform=linux/amd64 debian:bookworm-20260505-slim@sha256:67b30a61dc87758f0caf819646104f29ecbda97d920aaf5edc834128ac8493d3
+FROM --platform=linux/amd64 debian:bookworm-slim
 
 ARG BUILD_DATE
 ARG VERSION
