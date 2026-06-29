@@ -5,7 +5,13 @@
 #   - NVIDIA GPU support (via nvidia-container-toolkit)
 #   - TVE (TV Everywhere) with Google Chrome
 
-FROM --platform=linux/amd64 debian:bookworm-slim
+# Base pinned to the immutable 2026-05-05 Debian snapshot — the last-known-good window,
+# before the June-1 rebuild that was running when the issue appeared. Stops monthly
+# rebuilds from pulling a drifting debian:bookworm-slim.
+# NOTE: this freezes the base LAYER (glibc/base libs). The apt-get installs below still
+# pull CURRENT package versions (e.g. ffmpeg) unless the apt sources are also pinned to a
+# snapshot — see snapshot.debian.org if you want to freeze those too.
+FROM --platform=linux/amd64 debian:bookworm-20260505-slim@sha256:67b30a61dc87758f0caf819646104f29ecbda97d920aaf5edc834128ac8493d3
 
 ARG BUILD_DATE
 ARG VERSION
